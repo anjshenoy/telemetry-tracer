@@ -86,5 +86,17 @@ module Telemetry
       tracer = Tracer.current({:log_instrumentation_time => false})
       assert_equal false, tracer.log_instrumentation_time?
     end
+
+    it "accepts a sampling rate out of a default of thousand" do
+      tracer = Tracer.current({:sample => {:number_of_requests => 2, :out_of => 1024}})
+      assert_equal 2, tracer.sample
+      assert_equal 1024, tracer.sample_size
+    end
+
+    it "sets a default sampling rate of 1 out of every 1000 requests" do
+      tracer = Tracer.current
+      assert_equal 1, tracer.sample
+      assert_equal 1024, tracer.sample_size
+    end
   end
 end

@@ -7,7 +7,7 @@ module Telemetry
     include Helpers::IdMaker
     include Helpers::TimeMaker
 
-    attr_reader :spans, :id, :current_span, :root_span, :reason
+    attr_reader :spans, :id, :current_span, :root_span, :reason, :sample, :sample_size
 
     def initialize(opts={})
       check_dirty_bits(opts)
@@ -18,6 +18,11 @@ module Telemetry
       @enabled = opts[:enabled]
       @log_instrumentation_time = opts[:log_instrumentation_time]
       @log_instrumentation_time = true if @log_instrumentation_time.nil?
+      @sample, @sample_size = sample_and_size(opts[:sample])
+    end
+
+    def sample_and_size(opts)
+      (opts.nil? || opts.empty?) ? [1, 1024] : [opts[:number_of_requests], opts[:out_of]]
     end
 
     def dirty?
