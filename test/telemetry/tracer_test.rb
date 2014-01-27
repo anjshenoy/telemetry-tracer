@@ -67,5 +67,10 @@ module Telemetry
       tracer.annotate({"boo radley" => "stayed in because he wanted to"})
       assert_equal 1, tracer.current_span.annotations.size
     end
+
+    it "has an enabled flag" do
+      tracer = Tracer.current({:enabled => true})
+      assert_equal true, tracer.enabled?
+    end
   end
 end

@@ -15,10 +15,15 @@ module Telemetry
       #current span in the context of this RPC call
       @current_span = Span.new({:id => opts[:parent_span_id]})
       @spans = [@current_span]
+      @enabled = opts[:enabled]
     end
 
     def dirty?
       !!@dirty
+    end
+
+    def enabled?
+      !!@enabled
     end
 
     def annotate(params={})
