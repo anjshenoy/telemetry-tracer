@@ -1,6 +1,8 @@
 require "./lib/telemetry/span"
 require "./lib/telemetry/helpers/id_maker"
 require "./lib/telemetry/helpers/time_maker"
+require "Socket"
+require "pp"
 
 module Telemetry
   class Tracer
@@ -19,6 +21,7 @@ module Telemetry
       @log_instrumentation_time = opts[:log_instrumentation_time]
       @log_instrumentation_time = true if @log_instrumentation_time.nil?
       @sample, @sample_size = sample_and_size(opts[:sample])
+      @host = opts[:run_on_hosts]
     end
 
     def sample_and_size(opts)
@@ -39,6 +42,10 @@ module Telemetry
 
     def annotate(params={})
       current_span.annotate(params)
+    end
+
+    def matching_host?
+      @host.nil? ? true : !!(Socket.gethostname =~ /#{@host}/)
     end
 
     private

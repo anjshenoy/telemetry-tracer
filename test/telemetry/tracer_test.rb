@@ -98,5 +98,14 @@ module Telemetry
       assert_equal 1, tracer.sample
       assert_equal 1024, tracer.sample_size
     end
+
+    it "if a host regex is supplied, it runs it only on the hosts in question" do
+      tracer = Tracer.current({:run_on_hosts => "fubar-[1-3]"})
+      assert_equal false, tracer.matching_host?
+    end
+
+    it "runs it on all hosts if a host regex is not supplied" do
+      assert_equal true, Tracer.current.matching_host?
+    end
   end
 end
