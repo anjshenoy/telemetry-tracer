@@ -16,6 +16,8 @@ module Telemetry
       @current_span = Span.new({:id => opts[:parent_span_id]})
       @spans = [@current_span]
       @enabled = opts[:enabled]
+      @log_instrumentation_time = opts[:log_instrumentation_time]
+      @log_instrumentation_time = true if @log_instrumentation_time.nil?
     end
 
     def dirty?
@@ -24,6 +26,10 @@ module Telemetry
 
     def enabled?
       !!@enabled
+    end
+
+    def log_instrumentation_time?
+      !!@log_instrumentation_time
     end
 
     def annotate(params={})

@@ -72,5 +72,19 @@ module Telemetry
       tracer = Tracer.current({:enabled => true})
       assert_equal true, tracer.enabled?
     end
+
+    it "has an option for logging instrumentation time" do
+      tracer = Tracer.current({:log_instrumentation_time => true})
+      assert_equal true, tracer.log_instrumentation_time?
+    end
+
+    it "sets the default for logging instrumentation time to true if its not set" do
+      assert_equal true, Tracer.current.log_instrumentation_time?
+    end
+
+    it "setting option for logging instrumentation time to false negates the default for the same" do
+      tracer = Tracer.current({:log_instrumentation_time => false})
+      assert_equal false, tracer.log_instrumentation_time?
+    end
   end
 end
