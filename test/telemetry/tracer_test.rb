@@ -107,5 +107,16 @@ module Telemetry
     it "runs it on all hosts if a host regex is not supplied" do
       assert_equal true, Tracer.current.matching_host?
     end
+
+    it "has an override flag which defaults to true" do
+      assert_equal true, Tracer.current.override?
+    end
+
+    it "can switch of the override at any time" do
+      tracer = Tracer.current
+      assert_equal true, tracer.override?
+      tracer.override = false
+      assert_equal false, tracer.override?
+    end
   end
 end

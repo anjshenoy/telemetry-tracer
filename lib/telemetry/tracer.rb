@@ -22,6 +22,7 @@ module Telemetry
       @log_instrumentation_time = true if @log_instrumentation_time.nil?
       @sample, @sample_size = sample_and_size(opts[:sample])
       @host = opts[:run_on_hosts]
+      @override = true
     end
 
     def sample_and_size(opts)
@@ -46,6 +47,14 @@ module Telemetry
 
     def matching_host?
       @host.nil? ? true : !!(Socket.gethostname =~ /#{@host}/)
+    end
+
+    def override?
+      @override
+    end
+
+    def override=(flag)
+      @override = flag
     end
 
     private
