@@ -89,5 +89,15 @@ module Telemetry
       tracer = Tracer.current({:log_instrumentation_time => false})
       assert_equal false, tracer.log_instrumentation_time?
     end
+
+    it "accepts an override flag which it passes to the runner object" do
+      opts = {:enabled => true, :sample => {:number_of_requests => 1, :out_of => 1}}
+      Tracer.reset
+      tracer = Tracer.current(opts)
+      assert_equal true, tracer.run?
+
+      tracer.override = false
+      assert_equal false, tracer.run?
+    end
   end
 end

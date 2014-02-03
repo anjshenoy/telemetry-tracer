@@ -2,13 +2,17 @@ require "./lib/telemetry/span"
 require "./lib/telemetry/runner"
 require "./lib/telemetry/helpers/id_maker"
 require "./lib/telemetry/helpers/time_maker"
+require "forwardable"
 
 module Telemetry
   class Tracer
     include Helpers::IdMaker
     include Helpers::TimeMaker
+    extend Forwardable
 
     attr_reader :spans, :id, :current_span, :root_span, :reason, :runner
+    def_delegator :@runner, :run?, :run?
+    def_delegator :@runner, :override=, :override=
 
     def initialize(opts={})
       check_dirty_bits(opts)
