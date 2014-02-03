@@ -1,7 +1,6 @@
 require "test_helper"
 require "./lib/telemetry/tracer"
 
-
 module Telemetry
 
   class Tracer
@@ -68,9 +67,13 @@ module Telemetry
       assert_equal 1, tracer.current_span.annotations.size
     end
 
-    it "has an enabled flag" do
-      tracer = Tracer.current({:enabled => true})
-      assert_equal true, tracer.enabled?
+    it "passes all options except trace_id and parent_span_id to an internal runner object which tells it whether ot not to run" do
+      opts = {:enabled => true, 
+              :foo => "bar", 
+              :parent_span_id => "parent123",
+              :trace_id => "trace123"}
+      tracer = Tracer.current(opts)
+      assert_equal opts, tracer.runner.opts
     end
 
     it "has an option for logging instrumentation time" do
@@ -85,38 +88,6 @@ module Telemetry
     it "setting option for logging instrumentation time to false negates the default for the same" do
       tracer = Tracer.current({:log_instrumentation_time => false})
       assert_equal false, tracer.log_instrumentation_time?
-    end
-
-    it "accepts a sampling rate out of a default of thousand" do
-      tracer = Tracer.current({:sample => {:number_of_requests => 2, :out_of => 1024}})
-      assert_equal 2, tracer.sample
-      assert_equal 1024, tracer.sample_size
-    end
-
-    it "sets a default sampling rate of 1 out of every 1000 requests" do
-      tracer = Tracer.current
-      assert_equal 1, tracer.sample
-      assert_equal 1024, tracer.sample_size
-    end
-
-    it "if a host regex is supplied, it runs it only on the hosts in question" do
-      tracer = Tracer.current({:run_on_hosts => "fubar-[1-3]"})
-      assert_equal false, tracer.matching_host?
-    end
-
-    it "runs it on all hosts if a host regex is not supplied" do
-      assert_equal true, Tracer.current.matching_host?
-    end
-
-    it "has an override flag which defaults to true" do
-      assert_equal true, Tracer.current.override?
-    end
-
-    it "can switch of the override at any time" do
-      tracer = Tracer.current
-      assert_equal true, tracer.override?
-      tracer.override = false
-      assert_equal false, tracer.override?
     end
   end
 end
