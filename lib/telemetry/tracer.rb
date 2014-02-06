@@ -40,7 +40,9 @@ module Telemetry
     end
 
     def start
-      @start_time = time
+      if run?
+        @start_time = time
+      end
     end
 
     def stop
@@ -51,9 +53,13 @@ module Telemetry
     end
 
     def apply(&block)
-      start
-      yield self
-      stop
+      if run?
+        start
+        yield self
+        stop
+      else
+        yield
+      end
     end
 
     private

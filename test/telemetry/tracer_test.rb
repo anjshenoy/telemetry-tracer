@@ -147,14 +147,31 @@ module Telemetry
         trace.annotate(annotation)
         assert_equal 1, trace.annotations.size
       end
+    end
 
+    it "can be started only if its allowed to run" do
+      tracer = default_tracer({:enabled => false})
+      assert_equal false, tracer.run?
+      tracer.start
+      assert_equal true, tracer.start_time.nil?
+    end
+
+    it "can be applied only if its allowed to run" do
+      tracer = default_tracer({:enabled => false})
+      assert_equal false, tracer.run?
+      tracer.apply do |trace|
+        assert_equal true, trace.nil?
+      end
     end
 
     private
-    def default_tracer
-      opts = {:enabled => true, :sample => {:number_of_requests => 1, :out_of => 1}}
+    def default_tracer(override_opts={})
       Tracer.reset
-      Tracer.current(opts)
+      Tracer.current(opts.merge!(override_opts))
+    end
+
+    def opts
+      {:enabled => true, :sample => {:number_of_requests => 1, :out_of => 1}}
     end
   end
 end
