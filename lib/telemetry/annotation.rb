@@ -8,7 +8,11 @@ module Telemetry
 
     def initialize(params={})
       @params = params
-      @start_time = time
+      @time = time
+    end
+
+    def to_hash
+      @params.merge({:time => time})
     end
   end
 end

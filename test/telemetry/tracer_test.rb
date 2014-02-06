@@ -92,9 +92,7 @@ module Telemetry
     end
 
     it "accepts an override flag which it passes to the runner object" do
-      opts = {:enabled => true, :sample => {:number_of_requests => 1, :out_of => 1}}
-      Tracer.reset
-      tracer = Tracer.current(opts)
+      tracer = default_tracer
       assert_equal true, tracer.run?
 
       tracer.override = false
@@ -114,28 +112,49 @@ module Telemetry
     #end
 
     it "logs the start time of the trace when started" do
-      opts = {:enabled => true, :sample => {:number_of_requests => 1, :out_of => 1}}
-      Tracer.reset
-      tracer = Tracer.current(opts)
+      tracer = default_tracer
       tracer.start
       assert_equal true, !tracer.start_time.nil?
     end
 
     it "logs the end time of the trace when stopped" do
-      opts = {:enabled => true, :sample => {:number_of_requests => 1, :out_of => 1}}
-      Tracer.reset
-      tracer = Tracer.current(opts)
+      tracer = default_tracer
       tracer.stop
-      assert_equal true, !tracer.end_time.nil?
+      assert_equal true, !tracer.stop_time.nil?
     end
 
     it "stopping a trace before starting it marks it as dirty" do
-      opts = {:enabled => true, :sample => {:number_of_requests => 1, :out_of => 1}}
-      Tracer.reset
-      tracer = Tracer.current(opts)
+      tracer = default_tracer
       assert_equal nil, tracer.start_time
       tracer.stop
       assert_equal true, tracer.dirty?
+    end
+
+    it "applying a trace around a block logs the start and end times" do
+      tracer = default_tracer
+      tracer.apply do
+        2*2
+      end
+      assert_equal true, !tracer.start_time.nil?
+      assert_equal true, !tracer.stop_time.nil?
+    end
+
+    it "applying a trace yields the trace so annotations can be added to it" do
+      annotation = {:foo => "bar"}
+      tracer = default_tracer
+      tracer.apply do |trace|
+        assert_equal 0, trace.annotations.size
+        trace.annotate(annotation)
+        assert_equal 1, trace.annotations.size
+      end
+
+    end
+
+    private
+    def default_tracer
+      opts = {:enabled => true, :sample => {:number_of_requests => 1, :out_of => 1}}
+      Tracer.reset
+      Tracer.current(opts)
     end
   end
 end

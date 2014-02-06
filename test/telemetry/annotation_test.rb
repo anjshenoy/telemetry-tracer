@@ -12,8 +12,7 @@ module Telemetry
 
     it "logs the current time" do
       a  = Annotation.new
-      assert a.start_time < (Time.now.to_f * 1000000000).to_i
-
+      assert a.time < (Time.now.to_f * 1000000000).to_i
     end
 
   end

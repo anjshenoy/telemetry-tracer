@@ -10,7 +10,7 @@ module Telemetry
     include Helpers::TimeMaker
     extend Forwardable
 
-    attr_reader :spans, :id, :current_span, :root_span, :reason, :runner, :start_time, :end_time
+    attr_reader :spans, :id, :current_span, :root_span, :reason, :runner, :start_time, :stop_time
 
     def_delegator :@runner, :run?, :run?
     def_delegator :@runner, :override=, :override=
@@ -47,7 +47,13 @@ module Telemetry
       if @start_time.nil?
         @dirty = true
       end
-      @end_time = time
+      @stop_time = time
+    end
+
+    def apply(&block)
+      start
+      yield self
+      stop
     end
 
     private
