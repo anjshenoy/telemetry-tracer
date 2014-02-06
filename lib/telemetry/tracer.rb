@@ -12,7 +12,8 @@ module Telemetry
     include Helpers::Jsonifier
     extend Forwardable
 
-    attr_reader :spans, :id, :current_span, :root_span, :reason, :runner, :start_time, :stop_time
+    attr_reader :spans, :id, :current_span, :root_span, :reason, :runner, 
+      :start_time, :stop_time, :pid
 
     def_delegator :@runner, :run?, :run?
     def_delegator :@runner, :override=, :override=
@@ -25,6 +26,7 @@ module Telemetry
       @current_span = Span.new({:id => opts[:parent_span_id]})
       @spans = [@current_span]
       @runner = Runner.new(opts)
+      @pid = Process.pid
     end
 
     def dirty?
@@ -60,6 +62,7 @@ module Telemetry
 
     def to_hash
       {:id => id,
+       :pid => pid,
        :start_time => start_time,
        :stop => stop_time,
        :current_span_id => @current_span.id,

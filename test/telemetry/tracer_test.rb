@@ -149,6 +149,12 @@ module Telemetry
     #  assert_equal annotation, tracer.annotations.first
     #end
 
+
+    it "stores the process id its executing on" do
+      tracer = default_tracer
+      assert_equal true, (tracer.pid > 0)
+    end
+
     private
     def default_tracer(override_opts={})
       Tracer.reset
