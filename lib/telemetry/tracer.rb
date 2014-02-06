@@ -10,9 +10,11 @@ module Telemetry
     include Helpers::TimeMaker
     extend Forwardable
 
-    attr_reader :spans, :id, :current_span, :root_span, :reason, :runner
+    attr_reader :spans, :id, :current_span, :root_span, :reason, :runner, :start_time, :end_time
+
     def_delegator :@runner, :run?, :run?
     def_delegator :@runner, :override=, :override=
+    def_delegator :@current_span, :annotations, :annotations
 
     def initialize(opts={})
       check_dirty_bits(opts)
@@ -35,6 +37,14 @@ module Telemetry
 
     def annotate(params={})
       current_span.annotate(params)
+    end
+
+    def start
+      @start_time = time
+    end
+
+    def stop
+      @end_time = time
     end
 
     private

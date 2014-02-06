@@ -1,5 +1,6 @@
 require "test_helper"
 require "./lib/telemetry/tracer"
+require "pp"
 
 module Telemetry
 
@@ -98,6 +99,34 @@ module Telemetry
 
       tracer.override = false
       assert_equal false, tracer.run?
+    end
+
+    #TODO logging annotations at start_trace time is an enhancement for now. 
+    # Do this last of all
+    #it "starting a trace optionally takes a request hash out of which requested variables are stored as annotations" do
+    #  opts = {:enabled => true, :sample => {:number_of_requests => 1, :out_of => 1}}
+    #  Tracer.reset
+    #  tracer = Tracer.current(opts)
+    #  request_env = {:foo => "bar"}
+    #  tracer.start_trace(request_env)
+    #  assert_equal 1, tracer.annotations.size
+    #  assert_equal annotation, tracer.annotations.first
+    #end
+
+    it "logs the start time of the trace when started" do
+      opts = {:enabled => true, :sample => {:number_of_requests => 1, :out_of => 1}}
+      Tracer.reset
+      tracer = Tracer.current(opts)
+      tracer.start
+      assert_equal true, !tracer.start_time.nil?
+    end
+
+    it "logs the end time of the trace when stopped" do
+      opts = {:enabled => true, :sample => {:number_of_requests => 1, :out_of => 1}}
+      Tracer.reset
+      tracer = Tracer.current(opts)
+      tracer.stop
+      assert_equal true, !tracer.end_time.nil?
     end
   end
 end
