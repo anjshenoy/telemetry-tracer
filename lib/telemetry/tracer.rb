@@ -25,16 +25,10 @@ module Telemetry
       @current_span = Span.new({:id => opts[:parent_span_id]})
       @spans = [@current_span]
       @runner = Runner.new(opts)
-      @log_instrumentation_time = opts[:log_instrumentation_time]
-      @log_instrumentation_time = @log_instrumentation_time.nil? ? true : @log_instrumentation_time
     end
 
     def dirty?
       !!@dirty
-    end
-
-    def log_instrumentation_time?
-      !!@log_instrumentation_time
     end
 
     def annotate(params={})
