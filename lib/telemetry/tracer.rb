@@ -2,12 +2,14 @@ require "./lib/telemetry/span"
 require "./lib/telemetry/runner"
 require "./lib/telemetry/helpers/id_maker"
 require "./lib/telemetry/helpers/time_maker"
+require "./lib/telemetry/helpers/jsonifier"
 require "forwardable"
 
 module Telemetry
   class Tracer
     include Helpers::IdMaker
     include Helpers::TimeMaker
+    include Helpers::Jsonifier
     extend Forwardable
 
     attr_reader :spans, :id, :current_span, :root_span, :reason, :runner, :start_time, :stop_time
@@ -24,7 +26,7 @@ module Telemetry
       @spans = [@current_span]
       @runner = Runner.new(opts)
       @log_instrumentation_time = opts[:log_instrumentation_time]
-      @log_instrumentation_time = true if @log_instrumentation_time.nil?
+      @log_instrumentation_time = @log_instrumentation_time.nil? ? true : @log_instrumentation_time
     end
 
     def dirty?
@@ -60,6 +62,14 @@ module Telemetry
       else
         yield
       end
+    end
+
+    def to_hash
+      {:id => id,
+       :start_time => start_time,
+       :stop => stop_time,
+       :current_span_id => @current_span.id,
+       :spans => spans.map(&:to_hash)}
     end
 
     private
