@@ -128,5 +128,14 @@ module Telemetry
       tracer.stop
       assert_equal true, !tracer.end_time.nil?
     end
+
+    it "stopping a trace before starting it marks it as dirty" do
+      opts = {:enabled => true, :sample => {:number_of_requests => 1, :out_of => 1}}
+      Tracer.reset
+      tracer = Tracer.current(opts)
+      assert_equal nil, tracer.start_time
+      tracer.stop
+      assert_equal true, tracer.dirty?
+    end
   end
 end

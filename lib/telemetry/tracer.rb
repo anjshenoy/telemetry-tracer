@@ -44,6 +44,9 @@ module Telemetry
     end
 
     def stop
+      if @start_time.nil?
+        @dirty = true
+      end
       @end_time = time
     end
 
