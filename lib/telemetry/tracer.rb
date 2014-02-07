@@ -13,7 +13,7 @@ module Telemetry
     extend Forwardable
 
     attr_reader :spans, :id, :current_span, :root_span, :reason, :runner, 
-      :start_time, :stop_time, :pid
+      :start_time, :stop_time
 
     def_delegator :@runner, :run?, :run?
     def_delegator :@runner, :override=, :override=
@@ -26,11 +26,15 @@ module Telemetry
       @current_span = Span.new({:id => opts[:parent_span_id]})
       @spans = [@current_span]
       @runner = Runner.new(opts)
-      @pid = Process.pid
+      @in_progress = false
     end
 
     def dirty?
       !!@dirty
+    end
+
+    def in_progress?
+      !!@in_progress
     end
 
     def annotate(params={})
@@ -40,14 +44,16 @@ module Telemetry
     def start
       if run?
         @start_time = time
+        @in_progress = true
       end
     end
 
     def stop
-      if @start_time.nil?
-        @dirty = true
+      if run?
+        @stop_time = time
+        @current_span.flush!
+        @in_progress = false
       end
-      @stop_time = time
     end
 
     def apply(&block)

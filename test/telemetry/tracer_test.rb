@@ -15,7 +15,7 @@ module Telemetry
 
   describe Tracer do
 
-    def teardown
+    after do
       Tracer.reset
     end
 
@@ -96,11 +96,27 @@ module Telemetry
       assert_equal true, !tracer.stop_time.nil?
     end
 
-    it "stopping a trace before starting it marks it as dirty" do
-      tracer = default_tracer
-      assert_equal nil, tracer.start_time
+    it "runs the start method of a trace only if its allowed to run" do
+      tracer = default_tracer({:enabled => false})
+      assert_equal false, tracer.in_progress?
+      tracer.start
+      assert_equal false, tracer.in_progress?
+    end
+
+    it "runs the stop method of a trace only if its allowed to run" do
+      tracer = default_tracer({:enabled => false})
+      assert_equal false, tracer.in_progress?
       tracer.stop
-      assert_equal true, tracer.dirty?
+      assert_equal false, tracer.in_progress?
+    end
+
+    it "turns off the progress sign after its been stopped" do
+      tracer = default_tracer
+      assert_equal false, tracer.in_progress?
+      tracer.start
+      assert_equal true, tracer.in_progress?
+      tracer.stop
+      assert_equal false, tracer.in_progress?
     end
 
     it "applying a trace around a block logs the start and end times" do
@@ -148,12 +164,6 @@ module Telemetry
     #  assert_equal 1, tracer.annotations.size
     #  assert_equal annotation, tracer.annotations.first
     #end
-
-
-    it "stores the process id its executing on" do
-      tracer = default_tracer
-      assert_equal true, (tracer.pid > 0)
-    end
 
     private
     def default_tracer(override_opts={})

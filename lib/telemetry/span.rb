@@ -9,7 +9,8 @@ module Telemetry
     include Helpers::TimeMaker
     include Helpers::Jsonifier
 
-    attr_reader :id, :parent_span_id, :trace_id, :name, :annotations, :start_time
+    attr_reader :id, :parent_span_id, :trace_id, :name, :annotations, 
+      :start_time, :pid, :hostname
 
     def initialize(opts={})
       @parent_span_id = opts[:parent_span_id]
@@ -18,6 +19,9 @@ module Telemetry
       @name = opts[:name]
       @annotations = []
       @start_time = time
+      @pid = Process.pid
+      @hostname = Socket.gethostname
+      @flushed = false
     end
 
     def root?
@@ -28,8 +32,18 @@ module Telemetry
       @annotations << Annotation.new(params)
     end
 
+    def flushed?
+      !!@flushed
+    end
+
+    def flush!
+      @flushed = true
+    end
+
     def to_hash
       {:id => id,
+       :pid => pid,
+       :hostname => hostname,
        :parent_span_id => parent_span_id,
        :name => name,
        :start_time => start_time,

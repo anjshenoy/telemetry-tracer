@@ -1,5 +1,6 @@
 require "test_helper"
 require "./lib/telemetry/span"
+require "socket"
 
 module Telemetry
   describe Span do
@@ -47,5 +48,19 @@ module Telemetry
       assert span.start_time < time_in_nanos
     end
 
+    it "stores the process id its executing on" do
+      assert_equal Process.pid, Span.new.pid
+    end
+
+    it "stores the fully qualified hostname its executing on" do
+      assert_equal Socket.gethostname, Span.new.hostname
+    end
+
+    it "sets the flushed state to true once its flushed" do
+      span = Span.new
+      assert_equal false, span.flushed?
+      span.flush!
+      assert_equal true, span.flushed?
+    end
   end
 end
