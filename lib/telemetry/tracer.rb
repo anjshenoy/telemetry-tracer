@@ -20,12 +20,14 @@ module Telemetry
     def_delegator :@current_span, :annotations, :annotations
 
     def initialize(opts={})
-      check_dirty_bits(opts)
-      @id = opts[:trace_id] || generate_id
-      #current span in the context of this RPC call
-      @current_span = Span.new({:id => opts[:parent_span_id]})
-      @spans = [@current_span]
       @runner = Runner.new(opts)
+      if run?
+        check_dirty_bits(opts)
+        @id = opts[:trace_id] || generate_id
+        #current span in the context of this RPC call
+        @current_span = Span.new({:id => opts[:parent_span_id]})
+        @spans = [@current_span]
+      end
       @in_progress = false
       @flushed = false
     end
