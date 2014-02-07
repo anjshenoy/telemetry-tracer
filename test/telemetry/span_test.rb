@@ -56,11 +56,5 @@ module Telemetry
       assert_equal Socket.gethostname, Span.new.hostname
     end
 
-    it "sets the flushed state to true once its flushed" do
-      span = Span.new
-      assert_equal false, span.flushed?
-      span.flush!
-      assert_equal true, span.flushed?
-    end
   end
 end

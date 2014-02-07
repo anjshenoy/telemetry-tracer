@@ -13,7 +13,7 @@ module Telemetry
     extend Forwardable
 
     attr_reader :spans, :id, :current_span, :root_span, :reason, :runner, 
-      :start_time, :stop_time
+      :start_time, :stop_time, :flushed
 
     def_delegator :@runner, :run?, :run?
     def_delegator :@runner, :override=, :override=
@@ -27,6 +27,7 @@ module Telemetry
       @spans = [@current_span]
       @runner = Runner.new(opts)
       @in_progress = false
+      @flushed = false
     end
 
     def dirty?
@@ -51,8 +52,8 @@ module Telemetry
     def stop
       if run?
         @stop_time = time
-        @current_span.flush!
         @in_progress = false
+        flush!
       end
     end
 
@@ -73,6 +74,14 @@ module Telemetry
        :stop => stop_time,
        :current_span_id => @current_span.id,
        :spans => spans.map(&:to_hash)}
+    end
+
+    def flushed?
+      !!@flushed
+    end
+
+    def flush!
+      @flushed = true
     end
 
     private

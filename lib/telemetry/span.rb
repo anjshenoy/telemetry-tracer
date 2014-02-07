@@ -21,7 +21,6 @@ module Telemetry
       @start_time = time
       @pid = Process.pid
       @hostname = Socket.gethostname
-      @flushed = false
     end
 
     def root?
@@ -30,14 +29,6 @@ module Telemetry
 
     def annotate(params={})
       @annotations << Annotation.new(params)
-    end
-
-    def flushed?
-      !!@flushed
-    end
-
-    def flush!
-      @flushed = true
     end
 
     def to_hash

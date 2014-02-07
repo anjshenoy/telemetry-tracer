@@ -153,6 +153,12 @@ module Telemetry
       end
     end
 
+    it "sets the flushed state to true once its flushed" do
+      tracer = default_tracer
+      assert_equal false, tracer.flushed?
+      tracer.flush!
+      assert_equal true, tracer.flushed?
+    end
     #TODO logging annotations at start_trace time is an enhancement for now. 
     # Do this last of all
     #it "starting a trace optionally takes a request hash out of which requested variables are stored as annotations" do
