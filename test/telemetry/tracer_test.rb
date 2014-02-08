@@ -45,13 +45,13 @@ module Telemetry
     it "markes itself as dirty and gives a reason if either trace_id is present but parent span id isn't" do
       tracer = default_tracer({:trace_id => "fubar123"})
       assert tracer.dirty?
-      assert_equal "trace_id present; parent_span_id not present.", tracer.reason
+      assert_equal "trace_id present; parent_span_id not present.", tracer.to_hash[:tainted]
     end
 
     it "markes itself as dirty if trace id is not present but parent_span_id is" do
       tracer = default_tracer({:enabled => true, :parent_span_id => "fubar123"})
       assert_equal true, tracer.dirty?
-      assert_equal "trace_id not present; parent_span_id present. Auto generating trace id", tracer.reason
+      assert_equal "trace_id not present; parent_span_id present. Auto generating trace id", tracer.to_hash[:tainted]
     end
 
     it "comes with a brand new span out of the box" do
@@ -65,15 +65,6 @@ module Telemetry
       assert tracer.current_span.annotations.empty?
       tracer.annotate({"boo radley" => "stayed in because he wanted to"})
       assert_equal 1, tracer.current_span.annotations.size
-    end
-
-    it "passes all options except trace_id and parent_span_id to an internal runner object which tells it whether ot not to run" do
-      opts = {:enabled => true, 
-              :foo => "bar", 
-              :parent_span_id => "parent123",
-              :trace_id => "trace123"}
-      tracer = Tracer.current(opts)
-      assert_equal opts, tracer.runner.opts
     end
 
     it "only does initializations if its allowed to run" do
@@ -166,6 +157,7 @@ module Telemetry
       tracer.flush!
       assert_equal true, tracer.flushed?
     end
+
     #TODO logging annotations at start_trace time is an enhancement for now. 
     # Do this last of all
     #it "starting a trace optionally takes a request hash out of which requested variables are stored as annotations" do
@@ -185,7 +177,11 @@ module Telemetry
     end
 
     def opts
-      {:enabled => true, :sample => {:number_of_requests => 1, :out_of => 1}}
+      {:enabled => true,
+       :log => {:filename => "tracer.log", 
+                :directory => "/tmp"},
+       :sample => {:number_of_requests => 1, 
+                   :out_of => 1}}
     end
   end
 end
