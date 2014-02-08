@@ -2,17 +2,19 @@ require "socket"
 
 module Telemetry
   class Runner
-    attr_reader :opts, :sample, :sample_size
+    attr_reader :sample, :sample_size
 
-    def initialize(opts={})
-      @opts = opts
-      @sample, @sample_size = sample_and_size(opts[:sample])
-      @host = opts[:run_on_hosts]
-      @override = true
+    #TODO: calculate sample etc. only if enabled = true
+    def initialize(*args)
+      @enabled, sample, @host = args
+      if enabled?
+        @sample, @sample_size = sample_and_size(sample)
+        @override = true
+      end
     end
 
     def override?
-      @override
+      !!@override
     end
 
     def override=(flag)
@@ -20,23 +22,24 @@ module Telemetry
     end
 
     def enabled?
-      !!@opts[:enabled]
+      !!@enabled
     end
 
     def sample_and_size(sample_opts={})
       if (sample_opts.nil? || sample_opts.empty?)
         [1, 1024]
       else
+        sample_opts = sample_opts[:sample]
         [sample_opts[:number_of_requests], sample_opts[:out_of]]
-        end
+      end
     end
 
     def matching_host?
-      @host.nil? ? true : !!(Socket.gethostname =~ /#{@host}/)
+      enabled? && (@host.nil? ? true : !!(Socket.gethostname =~ /#{@host}/))
     end
 
     def sample?
-      rand(@sample_size) <= @sample
+      enabled? && (rand(@sample_size) <= @sample)
     end
 
     def run?
