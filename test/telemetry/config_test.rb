@@ -11,8 +11,8 @@ module Telemetry
 
     it "builds other dependencies only if the runner object decides tor run" do
       @config = Config.new(opts)
-      assert_equal true, @config.sink.respond_to?(:process)
-      assert_equal true, @config.error_logger.respond_to?(:error)
+      assert_equal true, !@config.sink.nil?
+      assert_equal true, !@config.error_logger.nil?
 
       @config = Config.new(opts.merge({:enabled => false}))
       assert_nil @config.sink
