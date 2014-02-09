@@ -13,7 +13,7 @@ class Zephyr
       raise
     ensure
       span.annotate('ClientReceived')
-      span.end
+      span.stop
     end
   end
 end
