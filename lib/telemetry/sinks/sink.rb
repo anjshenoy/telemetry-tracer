@@ -6,15 +6,20 @@ module Telemetry
   module Sinks
 
     class Sink
-      extend Forwardable
-      def_delegator :@_sink, :process, :process
-
       def initialize(opts)
         log_to_disk, http_endpoint = opts[:log], opts[:http_endpoint]
         if !log_to_disk.nil?
           @_sink = LogSink.new(log_to_disk)
         else
           @_sink = HTTPSink.new(http_endpoint)
+        end
+      end
+
+      def method_missing(method_name, *args)
+        if @_sink.respond_to?(method_name)
+          @_sink.send(method_name, *args)
+        else
+          super
         end
       end
     end
