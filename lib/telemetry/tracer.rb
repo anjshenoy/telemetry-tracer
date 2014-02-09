@@ -49,14 +49,14 @@ module Telemetry
 
     def start
       if run?
-        @start_time = time
+        @current_span.start
         @in_progress = true
       end
     end
 
     def stop
       if run?
-        @stop_time = time
+        @current_span.stop
         @in_progress = false
         flush!
       end

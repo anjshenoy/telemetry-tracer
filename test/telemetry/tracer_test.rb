@@ -82,18 +82,6 @@ module Telemetry
       assert_equal false, tracer.run?
     end
 
-    it "logs the start time of the trace when started" do
-      tracer = default_tracer
-      tracer.start
-      assert_equal true, !tracer.start_time.nil?
-    end
-
-    it "logs the end time of the trace when stopped" do
-      tracer = default_tracer
-      tracer.stop
-      assert_equal true, !tracer.stop_time.nil?
-    end
-
     it "runs the start method of a trace only if its allowed to run" do
       tracer = default_tracer({:enabled => false})
       assert_equal false, tracer.in_progress?
@@ -117,13 +105,13 @@ module Telemetry
       assert_equal false, tracer.in_progress?
     end
 
-    it "applying a trace around a block logs the start and end times" do
+    it "applying a trace around a block logs the start and end times for the current span" do
       tracer = default_tracer
       tracer.apply do
         2*2
       end
-      assert_equal true, !tracer.start_time.nil?
-      assert_equal true, !tracer.stop_time.nil?
+      assert_equal true, !tracer.current_span.start_time.nil?
+      assert_equal true, !tracer.current_span.stop_time.nil?
     end
 
     it "applying a trace yields the trace so annotations can be added to it" do

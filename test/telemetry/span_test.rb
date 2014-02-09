@@ -44,6 +44,7 @@ module Telemetry
 
     it "logs a start time in nano seconds when its initialized" do
       span = Span.new
+      span.start
       time_in_nanos = (Time.now.to_f * 1000000000).to_i
       assert span.start_time < time_in_nanos
     end
@@ -54,6 +55,18 @@ module Telemetry
 
     it "stores the fully qualified hostname its executing on" do
       assert_equal Socket.gethostname, Span.new.hostname
+    end
+
+    it "logs the start time of the span when started" do
+      span = Span.new
+      span.start
+      assert_equal true, !span.start_time.nil?
+    end
+
+    it "logs the end time of the trace when stopped" do
+      span = Span.new
+      span.stop
+      assert_equal true, !span.stop_time.nil?
     end
 
   end

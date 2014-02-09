@@ -10,7 +10,7 @@ module Telemetry
     include Helpers::Jsonifier
 
     attr_reader :id, :parent_span_id, :trace_id, :name, :annotations, 
-      :start_time, :pid, :hostname
+      :start_time, :stop_time, :pid, :hostname
 
     def initialize(opts={})
       @parent_span_id = opts[:parent_span_id]
@@ -18,7 +18,6 @@ module Telemetry
       @trace_id = opts[:trace_id]
       @name = opts[:name]
       @annotations = []
-      @start_time = time
       @pid = Process.pid
       @hostname = Socket.gethostname
     end
@@ -39,6 +38,14 @@ module Telemetry
        :name => name,
        :start_time => start_time,
        :annotations => annotations.map(&:to_hash) }
+    end
+
+    def start
+      @start_time = time
+    end
+
+    def stop
+      @stop_time = time
     end
 
   end
