@@ -27,8 +27,8 @@ module Telemetry
       @parent_span_id.nil?
     end
 
-    def annotate(params={})
-      @annotations << Annotation.new(params)
+    def annotate(key, message="")
+      @annotations << Annotation.new({key => message})
     end
 
     def to_hash

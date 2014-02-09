@@ -63,7 +63,7 @@ module Telemetry
     it "passes any annotations to the current span" do
       tracer = default_tracer
       assert tracer.current_span.annotations.empty?
-      tracer.annotate({"boo radley" => "stayed in because he wanted to"})
+      tracer.annotate("UserAgent", "Firefox")
       assert_equal 1, tracer.current_span.annotations.size
     end
 

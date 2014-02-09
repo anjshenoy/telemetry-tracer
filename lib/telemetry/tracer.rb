@@ -43,8 +43,8 @@ module Telemetry
       !!@in_progress
     end
 
-    def annotate(params={})
-      current_span.annotate(params)
+    def annotate(key, message="")
+      current_span.annotate(key, message)
     end
 
     def start
