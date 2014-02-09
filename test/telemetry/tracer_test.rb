@@ -146,6 +146,16 @@ module Telemetry
       assert_equal true, tracer.flushed?
     end
 
+    it "starting a new span makes the current span the parent span" do
+      tracer = default_tracer
+      previous_span = tracer.current_span
+      new_span = tracer.start_new_span("fubar2")
+      assert_equal "fubar2", new_span.name
+      assert_equal true, (new_span.id != previous_span.id)
+      assert_equal true, new_span.parent_span_id == previous_span.id
+      assert_equal true, (new_span.trace_id == previous_span.trace_id)
+    end
+
     #TODO logging annotations at start_trace time is an enhancement for now. 
     # Do this last of all
     #it "starting a trace optionally takes a request hash out of which requested variables are stored as annotations" do

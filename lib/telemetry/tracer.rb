@@ -23,11 +23,10 @@ module Telemetry
     def initialize(runner, trace_id, parent_span_id, sink)
       @runner = runner
       if run?
-        #TODO: annotated if dirty trace
         check_dirty_bits(trace_id, parent_span_id)
         @id = trace_id || generate_id
-        #current span in the context of this RPC call
-        @current_span = Span.new({:id => parent_span_id})
+        @current_span = Span.new({:id => parent_span_id, 
+                                  :trace_id => @id})
         @spans = [@current_span]
         @sink = sink
       end
@@ -70,6 +69,14 @@ module Telemetry
       else
         yield
       end
+    end
+
+    def start_new_span(name)
+      span = Span.new({:parent_span_id => @current_span.id, 
+                       :trace_id => id, 
+                       :name => name})
+      @spans << span
+      @current_span = span
     end
 
     def to_hash
