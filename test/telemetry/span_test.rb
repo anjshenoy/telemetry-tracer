@@ -71,7 +71,7 @@ module Telemetry
 
     it "creates annotations if any are supplied at create time" do
       annotation = {:service => "SplendidService"}
-      span = Span.new({:annotations => {:service => "SplendidService"}})
+      span = Span.new({:annotations => annotation})
       assert_equal 1, span.annotations.size
       assert_equal annotation, span.annotations.first.params
     end

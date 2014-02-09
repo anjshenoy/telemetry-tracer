@@ -29,8 +29,8 @@ module Telemetry
       if (sample_opts.nil? || sample_opts.empty?)
         [1, 1024]
       else
-        sample_opts = sample_opts[:sample]
-        [sample_opts[:number_of_requests], sample_opts[:out_of]]
+        sample_opts = sample_opts["sample"]
+        [sample_opts["number_of_requests"], sample_opts["out_of"]]
       end
     end
 

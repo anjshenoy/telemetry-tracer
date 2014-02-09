@@ -32,7 +32,7 @@ module Telemetry
 
     it "initializes itself with a trace id if one is passed" do
       trace_id = "abc123"
-      tracer = default_tracer({:trace_id => trace_id, :parent_span_id => "fubar"})
+      tracer = default_tracer({"trace_id" => trace_id, "parent_span_id" => "fubar"})
       assert_equal trace_id, tracer.id
     end
 
@@ -43,13 +43,13 @@ module Telemetry
 
     #we don't want to raise exceptions unless they can be logged somewhere
     it "markes itself as dirty and gives a reason if either trace_id is present but parent span id isn't" do
-      tracer = default_tracer({:trace_id => "fubar123"})
+      tracer = default_tracer({"trace_id" => "fubar123"})
       assert tracer.dirty?
       assert_equal "trace_id present; parent_span_id not present.", tracer.to_hash[:tainted]
     end
 
     it "markes itself as dirty if trace id is not present but parent_span_id is" do
-      tracer = default_tracer({:enabled => true, :parent_span_id => "fubar123"})
+      tracer = default_tracer({"enabled" => true, "parent_span_id" => "fubar123"})
       assert_equal true, tracer.dirty?
       assert_equal "trace_id not present; parent_span_id present. Auto generating trace id", tracer.to_hash[:tainted]
     end
@@ -68,7 +68,7 @@ module Telemetry
     end
 
     it "only does initializations if its allowed to run" do
-      tracer = default_tracer({:enabled => false, :trace_id => "123", :parent_span_id => "234"})
+      tracer = default_tracer({"enabled" => false, "trace_id" => "123", "parent_span_id" => "234"})
       assert_equal nil, tracer.spans
       assert_equal nil, tracer.id
       assert_equal nil, tracer.current_span
@@ -83,7 +83,7 @@ module Telemetry
     end
 
     it "runs the start method of a trace only if its allowed to run" do
-      tracer = default_tracer({:enabled => false})
+      tracer = default_tracer({"enabled" => false})
       assert_equal false, tracer.in_progress?
       tracer.start
       assert_equal false, tracer.in_progress?
@@ -125,14 +125,14 @@ module Telemetry
     end
 
     it "can be started only if its allowed to run" do
-      tracer = default_tracer({:enabled => false})
+      tracer = default_tracer({"enabled" => false})
       assert_equal false, tracer.run?
       tracer.start
       assert_equal true, tracer.start_time.nil?
     end
 
     it "can be applied only if its allowed to run" do
-      tracer = default_tracer({:enabled => false})
+      tracer = default_tracer({"enabled" => false})
       assert_equal false, tracer.run?
       tracer.apply do |trace|
         assert_equal true, trace.nil?
@@ -157,7 +157,7 @@ module Telemetry
     end
 
     it "assigns a name to the created span if one is given" do
-      tracer = default_tracer(opts.merge({:name => "fubar2"}))
+      tracer = default_tracer(opts.merge({"name" => "fubar2"}))
       assert_equal "fubar2", tracer.current_span.name
     end
 
@@ -180,11 +180,11 @@ module Telemetry
     end
 
     def opts
-      {:enabled => true,
-       :log => {:filename => "tracer.log", 
-                :directory => "/tmp"},
-       :sample => {:number_of_requests => 1, 
-                   :out_of => 1}}
+      {"enabled" => true,
+       "log" => {"filename" => "tracer.log", 
+                "directory" => "/tmp"},
+       "sample" => {"number_of_requests" => 1, 
+                   "out_of" => 1}}
     end
   end
 end

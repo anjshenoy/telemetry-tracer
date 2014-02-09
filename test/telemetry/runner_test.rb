@@ -3,7 +3,7 @@ require "./lib/telemetry/runner"
 
 module Telemetry
   describe Runner do
-    let(:runner) { Runner.new(true, {:sample => {:number_of_requests => 1, :out_of => 1}}) }
+    let(:runner) { Runner.new(true, {"sample" => {"number_of_requests" => 1, "out_of" => 1}}) }
 
     it "has an enabled flag" do
       runner = Runner.new(true)
@@ -11,14 +11,14 @@ module Telemetry
     end
 
     it "sets up sampling rate and hosts only if its enabled" do
-      runner = Runner.new(false, {:sample => {:number_of_requests => 1, :out_of => 1}})
+      runner = Runner.new(false, {"sample" => {"number_of_requests" => 1, "out_of" => 1}})
       assert_equal false, runner.override?
       assert_equal false, runner.sample?
       assert_equal false, runner.matching_host?
     end
 
     it "accepts a sampling rate out of a default of thousand" do
-      runner = Runner.new(true, {:sample => {:number_of_requests => 2, :out_of => 1024}})
+      runner = Runner.new(true, {"sample" => {"number_of_requests" => 2, "out_of" => 1024}})
       assert_equal 2, runner.sample
       assert_equal 1024, runner.sample_size
     end

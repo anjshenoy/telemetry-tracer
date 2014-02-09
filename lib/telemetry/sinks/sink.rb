@@ -7,7 +7,7 @@ module Telemetry
     class Sink
 
       def initialize(opts, error_logger)
-        log_to_disk, http_endpoint = opts[:log], opts[:http_endpoint]
+        log_to_disk, http_endpoint = opts["log"], opts["http_endpoint"]
         @error_logger = error_logger
         begin
           if !log_to_disk.nil?
@@ -31,8 +31,8 @@ module Telemetry
 
     class LogSink
       def initialize(opts={})
-        filename = opts[:filename] || "telemetry_tracer.log"
-        directory = opts[:directory]
+        filename = opts["filename"] || "telemetry_tracer.log"
+        directory = opts["directory"]
         @logger = ::Logger.new(directory + "/" + filename)
       end
 
@@ -44,7 +44,7 @@ module Telemetry
 
     class HTTPSink
       def initialize(opts={})
-        @http = Net::HTTP.new(opts[:server], opts[:port])
+        @http = Net::HTTP.new(opts["server"], opts["port"])
       end
 
       def process(trace)

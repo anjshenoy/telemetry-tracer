@@ -24,13 +24,13 @@ module Telemetry
       @runner = runner
       if run?
         @sink = sink
-        trace_id, parent_span_id = opts[:trace_id], opts[:parent_span_id]
+        trace_id, parent_span_id = opts["trace_id"], opts["parent_span_id"]
         check_dirty_bits(trace_id, parent_span_id)
         @id = trace_id || generate_id
         @current_span = Span.new({:id => parent_span_id, 
                                   :trace_id => @id,
-                                  :name => opts[:name],
-                                  :annotations => opts[:annotations]})
+                                  :name => opts["name"],
+                                  :annotations => opts["annotations"]})
         @spans = [@current_span]
       end
       @in_progress = false

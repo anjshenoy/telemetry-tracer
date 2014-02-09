@@ -14,8 +14,7 @@ module Rack
 
       current_span = Telemetry::Tracer.current(tracer_opts).current_span
       current_span.annotate('ServerReceived')
-      #TODO: this should come from a config.
-      current_span.annotate('ServiceName', 'unknown rails - update telemetry-ruby to include')
+      #current_span.annotate('ServiceName', 'unknown rails - update telemetry-ruby to include')
 
       status, headers, response = @app.call(env)
 
