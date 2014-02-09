@@ -156,6 +156,11 @@ module Telemetry
       assert_equal true, (new_span.trace_id == previous_span.trace_id)
     end
 
+    it "assigns a name to the created span if one is given" do
+      tracer = default_tracer(opts.merge({:name => "fubar2"}))
+      assert_equal "fubar2", tracer.current_span.name
+    end
+
     #TODO logging annotations at start_trace time is an enhancement for now. 
     # Do this last of all
     #it "starting a trace optionally takes a request hash out of which requested variables are stored as annotations" do

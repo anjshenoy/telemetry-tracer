@@ -18,6 +18,7 @@ module Telemetry
       @trace_id = opts[:trace_id]
       @name = opts[:name]
       @annotations = []
+      add_annotations(opts[:annotations] || {})
       @pid = Process.pid
       @hostname = Socket.gethostname
     end
@@ -28,6 +29,10 @@ module Telemetry
 
     def annotate(key, message="")
       @annotations << Annotation.new({key => message})
+    end
+
+    def add_annotations(annotations_hash)
+      annotations_hash.each {|k, v| annotate(k, v) }
     end
 
     def to_hash

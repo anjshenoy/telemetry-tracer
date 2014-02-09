@@ -20,15 +20,18 @@ module Telemetry
     def_delegator :@runner, :override=, :override=
     def_delegator :@current_span, :annotations, :annotations
 
-    def initialize(runner, trace_id, parent_span_id, sink)
+    def initialize(runner, sink, opts={})
       @runner = runner
       if run?
+        @sink = sink
+        trace_id, parent_span_id = opts[:trace_id], opts[:parent_span_id]
         check_dirty_bits(trace_id, parent_span_id)
         @id = trace_id || generate_id
         @current_span = Span.new({:id => parent_span_id, 
-                                  :trace_id => @id})
+                                  :trace_id => @id,
+                                  :name => opts[:name],
+                                  :annotations => opts[:annotations]})
         @spans = [@current_span]
-        @sink = sink
       end
       @in_progress = false
       @flushed = false
@@ -119,7 +122,7 @@ module Telemetry
 
       def build(opts={})
         @config = Telemetry::Config.new(opts)
-        new(@config.runner, opts[:trace_id], opts[:parent_span_id], @config.sink)
+        new(@config.runner, @config.sink, opts)
       end
     end
   end
