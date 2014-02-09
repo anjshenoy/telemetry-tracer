@@ -1,20 +1,30 @@
 require "net/http"
 require "logger"
-require "forwardable"
 
 module Telemetry
   module Sinks
 
     class Sink
-      extend Forwardable
-      def_delegator :@_sink, :process, :process
 
-      def initialize(opts)
+      def initialize(opts, error_logger)
         log_to_disk, http_endpoint = opts[:log], opts[:http_endpoint]
-        if !log_to_disk.nil?
-          @_sink = LogSink.new(log_to_disk)
-        else
-          @_sink = HTTPSink.new(http_endpoint)
+        @error_logger = error_logger
+        begin
+          if !log_to_disk.nil?
+            @_sink = LogSink.new(log_to_disk)
+          else
+            @_sink = HTTPSink.new(http_endpoint)
+          end
+        rescue Exception => ex
+          @error_logger.error ex.backtrace.join("\n")
+        end
+      end
+
+      def process(trace)
+        begin
+          @_sink.process(trace)
+        rescue Exception => ex
+          @error_logger.error ex.backtrace.join("\n")
         end
       end
     end
@@ -38,13 +48,9 @@ module Telemetry
       end
 
       def process(trace)
-        begin
-          @http.post('/trace',
-                     trace.to_json,
-                     {'Content-Type' => 'application/json', 'Accept' => 'application/json'})
-        rescue Exception => ex
-          Telemetry::ErrorLogger.error ex.backtrace.join("\n")
-        end
+        @http.post('/trace',
+                   trace.to_json,
+                   {'Content-Type' => 'application/json', 'Accept' => 'application/json'})
       end
     end
   end
