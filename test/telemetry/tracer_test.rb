@@ -8,6 +8,7 @@ module Telemetry
     class << self
       def reset
         Tracer.instance_variable_set("@tracer", nil)
+        Tracer.instance_variable_set("@config", nil)
       end
       alias_method :new!, :reset
     end

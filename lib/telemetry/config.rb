@@ -26,12 +26,5 @@ module Telemetry
     def read_from_config_file(filename)
       YAML.load_file(filename)
     end
-
-    class << self
-      def current(opts={})
-        @config ||= new(opts)
-      end
-    end
-
   end
 end

@@ -121,7 +121,7 @@ module Telemetry
       alias_method :find_or_create, :current
 
       def build(opts={})
-        @config = Telemetry::Config.new(opts)
+        @config ||= Telemetry::Config.new(opts)
         new(@config.runner, @config.sink, opts)
       end
     end
