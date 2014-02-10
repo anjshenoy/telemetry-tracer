@@ -32,8 +32,7 @@ module Telemetry
       {"enabled" => true,
        "sample" => {"number_of_requests" => 1,
                     "out_of" => 1},
-       :log => {:filename => "tracer.log",
-                :directory => "/tmp"}}
+       "logger" => "/tmp/tracer.log"}
     end
 
   end

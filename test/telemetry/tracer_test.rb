@@ -161,18 +161,6 @@ module Telemetry
       assert_equal "fubar2", tracer.current_span.name
     end
 
-    #TODO logging annotations at start_trace time is an enhancement for now. 
-    # Do this last of all
-    #it "starting a trace optionally takes a request hash out of which requested variables are stored as annotations" do
-    #  opts = {:enabled => true, :sample => {:number_of_requests => 1, :out_of => 1}}
-    #  Tracer.reset
-    #  tracer = Tracer.current(opts)
-    #  request_env = {:foo => "bar"}
-    #  tracer.start_trace(request_env)
-    #  assert_equal 1, tracer.annotations.size
-    #  assert_equal annotation, tracer.annotations.first
-    #end
-
     private
     def default_tracer(override_opts={})
       Tracer.reset
@@ -181,8 +169,7 @@ module Telemetry
 
     def opts
       {"enabled" => true,
-       "log" => {"filename" => "tracer.log", 
-                "directory" => "/tmp"},
+       "logger" => "/tmp/tracer.log",
        "sample" => {"number_of_requests" => 1, 
                    "out_of" => 1}}
     end

@@ -18,7 +18,7 @@ module Telemetry
       @runner = Runner.new(opts["enabled"], {"sample" => opts["sample"]}, opts["run_on_hosts"])
       if @runner.run?
         @error_logger = Telemetry::Loggers.error_logger(opts["error_logger"])
-        @sink = Sinks::Sink.new({"log" => opts["log"], "http_endpoint" => opts["http_endpoint"]}, @error_logger)
+        @sink = Sinks::Sink.new(opts["logger"], opts["http_endpoint"], @error_logger)
       end
     end
 

@@ -3,8 +3,6 @@ sample:
   number_of_requests: 1
   out_of: 1
 error_logger: "/tmp/tracer_exceptions.log"
-logger:
-  filename: tracer.log
-  directory: /tmp
+logger: "/tmp/tracer.log"
 annotations:
   service: MySplendidServiceName
