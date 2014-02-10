@@ -13,8 +13,7 @@ module Telemetry
     include Helpers::Jsonifier
     extend Forwardable
 
-    attr_reader :spans, :id, :current_span, :root_span, :reason, :runner, 
-      :start_time, :stop_time, :flushed
+    attr_reader :spans, :id, :current_span, :runner
 
     def_delegator :@runner, :run?, :run?
     def_delegator :@runner, :override=, :override=
@@ -85,8 +84,6 @@ module Telemetry
     def to_hash
       {:id => id,
        :tainted => @reason,
-       :start_time => start_time,
-       :stop => stop_time,
        :current_span_id => @current_span.id,
        :spans => spans.map(&:to_hash)}
     end

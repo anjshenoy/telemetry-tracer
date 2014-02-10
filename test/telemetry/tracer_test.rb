@@ -129,7 +129,7 @@ module Telemetry
       tracer = default_tracer({"enabled" => false})
       assert_equal false, tracer.run?
       tracer.start
-      assert_equal true, tracer.start_time.nil?
+      assert_equal false, tracer.in_progress?
     end
 
     it "can be applied only if its allowed to run" do
