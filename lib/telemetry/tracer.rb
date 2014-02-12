@@ -18,6 +18,7 @@ module Telemetry
     def_delegator :@runner, :run?, :run?
     def_delegator :@runner, :override=, :override=
     def_delegator :@current_span, :annotations, :annotations
+    def_delegator :@current_span, :annotate, :annotate
 
     def initialize(runner, sink, opts={})
       @runner = runner
@@ -42,10 +43,6 @@ module Telemetry
 
     def in_progress?
       !!@in_progress
-    end
-
-    def annotate(key, message="")
-      current_span.annotate(key, message)
     end
 
     def start
