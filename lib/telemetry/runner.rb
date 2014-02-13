@@ -4,7 +4,6 @@ module Telemetry
   class Runner
     attr_reader :sample, :sample_size
 
-    #TODO: calculate sample etc. only if enabled = true
     def initialize(*args)
       @enabled, sample, @host = args
       if enabled?
