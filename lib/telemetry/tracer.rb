@@ -4,22 +4,19 @@ require "./lib/telemetry/config"
 require "./lib/telemetry/helpers/id_maker"
 require "./lib/telemetry/helpers/time_maker"
 require "./lib/telemetry/helpers/jsonifier"
-require "forwardable"
+require "./lib/core/forwardable_ext"
 
 module Telemetry
   class Tracer
     include Helpers::IdMaker
     include Helpers::TimeMaker
     include Helpers::Jsonifier
-    extend Forwardable
+    extend SimpleForwardable
 
     attr_reader :spans, :id, :current_span, :runner
 
-    def_delegator :@runner, :run?, :run?
-    def_delegator :@runner, :override=, :override=
-    def_delegator :@current_span, :annotations, :annotations
-    def_delegator :@current_span, :annotate, :annotate
-    def_delegator :@current_span, :post_process, :post_process
+    delegate :run?, :override=, :to => :runner
+    delegate :annotations, :annotate, :post_process, :to => :current_span
 
     def initialize(runner, sink, opts={})
       @runner = runner
@@ -119,6 +116,7 @@ module Telemetry
         @config ||= Telemetry::Config.new(opts)
         new(@config.runner, @config.sink, opts)
       end
+
     end
   end
 end
