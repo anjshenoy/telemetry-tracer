@@ -54,7 +54,9 @@ module Telemetry
        :parent_span_id => parent_span_id,
        :name => name,
        :start_time => start_time,
-       :annotations => annotations.map(&:to_hash) }
+       :stop_time => stop_time,
+       :annotations => annotations.map(&:to_hash),
+      }
     end
 
     def start
