@@ -9,8 +9,11 @@ module SimpleForwardable
 
   module ClassMethods
     def delegate(*args)
+      if(args.size < 2)
+        raise InvalidArgumentError("Need a method name and an object to delegate to")
+      end
+      to_hash = args.delete_at(-1)
       method_names = args
-      to_hash = method_names.delete_at(-1)
       if(to_hash.is_a?(Hash) && to_hash.has_key?(:to))
         object = to_hash[:to]
         method_names.each do |method_name|
