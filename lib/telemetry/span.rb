@@ -2,6 +2,7 @@ require "./lib/telemetry/helpers/id_maker"
 require "./lib/telemetry/helpers/time_maker"
 require "./lib/telemetry/helpers/jsonifier"
 require "./lib/telemetry/annotation"
+require "celluloid"
 
 module Telemetry
   class Span
@@ -32,8 +33,8 @@ module Telemetry
       @annotations << Annotation.new({key => message})
     end
 
-    def post_process(hash)
-       @post_process_blocks.merge!(hash)
+    def post_process(name, &block)
+      @post_process_blocks.merge!({name => Celluloid::Future.new(&block)})
     end
 
     def add_annotations(annotations_hash)
@@ -41,8 +42,8 @@ module Telemetry
     end
 
     def run_post_process!
-      post_process_blocks.each_pair do |key, proc|
-        annotate(key, proc.call)
+      post_process_blocks.each_pair do |key, future|
+        annotate(key, future.value)
       end
     end
 

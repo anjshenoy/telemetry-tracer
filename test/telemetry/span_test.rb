@@ -77,40 +77,34 @@ module Telemetry
     end
 
     it "allows you to add a block of code to post process later" do
-      proc = Proc.new{ 
+      restart_celluloid
+      span = Span.new
+      assert_equal true, span.post_process_blocks.empty?
+      span.post_process("foo") do 
         x = 2
         10.times { x = x*2 }
         x
-      }
-
-      hash = {"foo" => proc}
-
-      span = Span.new
-      assert_equal true, span.post_process_blocks.empty?
-      span.post_process(hash)
+      end
       assert_equal 1, span.post_process_blocks.size
-      assert_equal proc, span.post_process_blocks["foo"]
+      assert_equal true, span.post_process_blocks["foo"].is_a?(Celluloid::Future)
     end
 
     it "executes any post process blocks and stores the results as new annotations" do
-      proc = Proc.new{
+      restart_celluloid
+      span = Span.new
+      assert_equal true, span.annotations.empty?
+      span.post_process("foo") do
         x = 2
         10.times { x = x*2 }
         x
-      }
-
-      proc2 = Proc.new{
+      end
+      span.post_process("bar") do
         y = 3
         until(y < 0) do
           y -= 1
         end
         y
-      }
-      hash = {"foo" => proc, "bar" => proc2}
-
-      span = Span.new
-      assert_equal true, span.annotations.empty?
-      span.post_process(hash)
+      end
       span.run_post_process!
       assert_equal 2, span.annotations.size
       processed_hash1 = {"foo" => 2048}
@@ -119,5 +113,9 @@ module Telemetry
       assert_equal processed_hash2, span.annotations.last.params
     end
 
+    def restart_celluloid
+      Celluloid.shutdown
+      Celluloid.boot
+    end
   end
 end
