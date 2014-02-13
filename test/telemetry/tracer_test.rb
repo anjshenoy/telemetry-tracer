@@ -143,7 +143,7 @@ module Telemetry
     it "sets the flushed state to true once its flushed" do
       tracer = default_tracer
       assert_equal false, tracer.flushed?
-      tracer.flush!
+      tracer.stop
       assert_equal true, tracer.flushed?
     end
 
@@ -175,6 +175,8 @@ module Telemetry
       tracer.post_process(hash)
       assert_equal proc, tracer.current_span.post_process_blocks["foo"]
     end
+
+    
 
     private
     def default_tracer(override_opts={})

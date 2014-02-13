@@ -87,13 +87,13 @@ module Telemetry
       !!@flushed
     end
 
+
+    private
     def flush!
       @flushed = true
       @sink.process(self)
     end
 
-
-    private
     def check_dirty_bits(trace_id, parent_span_id)
       @dirty = false
       if (trace_id.nil? && !parent_span_id.nil?)
