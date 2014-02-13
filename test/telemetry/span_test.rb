@@ -89,9 +89,10 @@ module Telemetry
       assert_equal true, span.post_process_blocks["foo"].is_a?(Celluloid::Future)
     end
 
-    it "executes any post process blocks and stores the results as new annotations" do
+    it "executes any post process blocks and stores the results as new annotations when a span is stopped" do
       restart_celluloid
       span = Span.new
+      span.start
       assert_equal true, span.annotations.empty?
       span.post_process("foo") do
         x = 2
@@ -105,7 +106,9 @@ module Telemetry
         end
         y
       end
-      span.run_post_process!
+      assert_equal 2, span.post_process_blocks.size
+      assert_equal 0, span.annotations.size
+      span.stop
       assert_equal 2, span.annotations.size
       processed_hash1 = {"foo" => 2048}
       processed_hash2 = {"bar" => -1}
@@ -113,9 +116,5 @@ module Telemetry
       assert_equal processed_hash2, span.annotations.last.params
     end
 
-    def restart_celluloid
-      Celluloid.shutdown
-      Celluloid.boot
-    end
   end
 end

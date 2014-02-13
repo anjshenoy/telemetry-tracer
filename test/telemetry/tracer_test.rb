@@ -163,36 +163,30 @@ module Telemetry
     end
 
     it "passes blocks to be post processed to the current span" do
+      restart_celluloid
       tracer = default_tracer
-      proc = Proc.new{
+      tracer.post_process("foo") do
         x = 2
         10.times { x = x*2 }
         x
-      }
-
-      hash = {"foo" => proc}
-
-      tracer.post_process(hash)
-      assert_equal proc, tracer.current_span.post_process_blocks["foo"]
+      end
+      assert_equal true, tracer.current_span.post_process_blocks["foo"].is_a?(Celluloid::Future)
     end
 
 
     it "executes any post process blocks associated with the current span when its stopped" do
+      restart_celluloid
       tracer = default_tracer
-      proc = Proc.new{
+      tracer.start
+      tracer.post_process("foo") do
         x = 2
         10.times { x = x*2 }
         x
-      }
-
-      hash = {"foo" => proc}
-
-      tracer.start
-      tracer.post_process(hash)
+      end
       tracer.stop
       processed_annotations = tracer.to_hash[:current_span][:annotations]
       assert_equal false, processed_annotations.empty?
-      assert_equal proc.call, processed_annotations.first["foo"]
+      assert_equal 2048, processed_annotations.first["foo"]
     end
 
     private

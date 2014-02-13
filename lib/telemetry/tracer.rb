@@ -5,6 +5,7 @@ require "./lib/telemetry/helpers/id_maker"
 require "./lib/telemetry/helpers/time_maker"
 require "./lib/telemetry/helpers/jsonifier"
 require "./lib/core/forwardable_ext"
+require "celluloid"
 
 module Telemetry
   class Tracer
@@ -91,7 +92,6 @@ module Telemetry
     private
     def flush!
       @flushed = true
-      @current_span.run_post_process!
       @sink.process(self)
     end
 

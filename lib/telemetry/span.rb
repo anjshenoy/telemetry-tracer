@@ -41,12 +41,6 @@ module Telemetry
       annotations_hash.each {|k, v| annotate(k, v) }
     end
 
-    def run_post_process!
-      post_process_blocks.each_pair do |key, future|
-        annotate(key, future.value)
-      end
-    end
-
     def to_hash
       {:id => id,
        :pid => pid,
@@ -65,6 +59,14 @@ module Telemetry
 
     def stop
       @stop_time = time
+      run_post_process!
+    end
+
+    private
+    def run_post_process!
+      post_process_blocks.each_pair do |key, future|
+        annotate(key, future.value)
+      end
     end
 
   end
