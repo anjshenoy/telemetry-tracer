@@ -79,8 +79,8 @@ module Telemetry
     def to_hash
       {:id => id,
        :tainted => @reason,
-       :current_span_id => @current_span.id,
-       :spans => spans.map(&:to_hash)}
+       :current_span => @current_span.to_hash
+      }
     end
 
     def flushed?
@@ -91,6 +91,7 @@ module Telemetry
     private
     def flush!
       @flushed = true
+      @current_span.run_post_process!
       @sink.process(self)
     end
 

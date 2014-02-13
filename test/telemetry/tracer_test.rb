@@ -164,7 +164,7 @@ module Telemetry
 
     it "passes blocks to be post processed to the current span" do
       tracer = default_tracer
-      proc = Proc.new{ 
+      proc = Proc.new{
         x = 2
         10.times { x = x*2 }
         x
@@ -176,7 +176,24 @@ module Telemetry
       assert_equal proc, tracer.current_span.post_process_blocks["foo"]
     end
 
-    
+
+    it "executes any post process blocks associated with the current span when its stopped" do
+      tracer = default_tracer
+      proc = Proc.new{
+        x = 2
+        10.times { x = x*2 }
+        x
+      }
+
+      hash = {"foo" => proc}
+
+      tracer.start
+      tracer.post_process(hash)
+      tracer.stop
+      processed_annotations = tracer.to_hash[:current_span][:annotations]
+      assert_equal false, processed_annotations.empty?
+      assert_equal proc.call, processed_annotations.first["foo"]
+    end
 
     private
     def default_tracer(override_opts={})
