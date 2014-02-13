@@ -19,6 +19,7 @@ module Telemetry
     def_delegator :@runner, :override=, :override=
     def_delegator :@current_span, :annotations, :annotations
     def_delegator :@current_span, :annotate, :annotate
+    def_delegator :@current_span, :post_process, :post_process
 
     def initialize(runner, sink, opts={})
       @runner = runner

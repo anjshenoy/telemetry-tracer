@@ -10,7 +10,7 @@ module Telemetry
     include Helpers::Jsonifier
 
     attr_reader :id, :parent_span_id, :trace_id, :name, :annotations, 
-      :start_time, :stop_time, :pid, :hostname
+      :start_time, :stop_time, :pid, :hostname, :post_process_blocks
 
     def initialize(opts={})
       @parent_span_id = opts[:parent_span_id]
@@ -21,6 +21,7 @@ module Telemetry
       add_annotations(opts[:annotations] || {})
       @pid = Process.pid
       @hostname = Socket.gethostname
+      @post_process_blocks = {}
     end
 
     def root?
@@ -31,8 +32,18 @@ module Telemetry
       @annotations << Annotation.new({key => message})
     end
 
+    def post_process(hash)
+       @post_process_blocks.merge!(hash)
+    end
+
     def add_annotations(annotations_hash)
       annotations_hash.each {|k, v| annotate(k, v) }
+    end
+
+    def run_post_process!
+      post_process_blocks.each_pair do |key, proc|
+        annotate(key, proc.call)
+      end
     end
 
     def to_hash

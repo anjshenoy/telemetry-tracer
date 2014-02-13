@@ -75,5 +75,49 @@ module Telemetry
       assert_equal 1, span.annotations.size
       assert_equal annotation, span.annotations.first.params
     end
+
+    it "allows you to add a block of code to post process later" do
+      proc = Proc.new{ 
+        x = 2
+        10.times { x = x*2 }
+        x
+      }
+
+      hash = {"foo" => proc}
+
+      span = Span.new
+      assert_equal true, span.post_process_blocks.empty?
+      span.post_process(hash)
+      assert_equal 1, span.post_process_blocks.size
+      assert_equal proc, span.post_process_blocks["foo"]
+    end
+
+    it "executes any post process blocks and stores the results as new annotations" do
+      proc = Proc.new{
+        x = 2
+        10.times { x = x*2 }
+        x
+      }
+
+      proc2 = Proc.new{
+        y = 3
+        until(y < 0) do
+          y -= 1
+        end
+        y
+      }
+      hash = {"foo" => proc, "bar" => proc2}
+
+      span = Span.new
+      assert_equal true, span.annotations.empty?
+      span.post_process(hash)
+      span.run_post_process!
+      assert_equal 2, span.annotations.size
+      processed_hash1 = {"foo" => 2048}
+      processed_hash2 = {"bar" => -1}
+      assert_equal processed_hash1, span.annotations.first.params
+      assert_equal processed_hash2, span.annotations.last.params
+    end
+
   end
 end

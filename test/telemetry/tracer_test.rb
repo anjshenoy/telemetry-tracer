@@ -162,6 +162,20 @@ module Telemetry
       assert_equal "fubar2", tracer.current_span.name
     end
 
+    it "passes blocks to be post processed to the current span" do
+      tracer = default_tracer
+      proc = Proc.new{ 
+        x = 2
+        10.times { x = x*2 }
+        x
+      }
+
+      hash = {"foo" => proc}
+
+      tracer.post_process(hash)
+      assert_equal proc, tracer.current_span.post_process_blocks["foo"]
+    end
+
     private
     def default_tracer(override_opts={})
       Tracer.reset
