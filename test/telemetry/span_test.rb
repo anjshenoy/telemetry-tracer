@@ -116,5 +116,19 @@ module Telemetry
       assert_equal processed_hash2, span.annotations.last.params
     end
 
+    it "logs the instrumentation time for each post process block executed" do
+      restart_celluloid
+      span = Span.new
+      span.start
+      assert_equal true, span.annotations.empty?
+      span.post_process("foo") do
+        x = 2
+        10.times { x = x*2 }
+        x
+      end
+      span.stop
+      assert_equal true, !span.annotations.first.instrumentation_time.nil?
+    end
+
   end
 end

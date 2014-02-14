@@ -29,8 +29,8 @@ module Telemetry
       @parent_span_id.nil?
     end
 
-    def annotate(key, message="")
-      @annotations << Annotation.new({key => message})
+    def annotate(key, message="", instrumentation_time = nil)
+      @annotations << Annotation.new({key => message}, instrumentation_time)
     end
 
     def post_process(name, &block)
@@ -65,8 +65,15 @@ module Telemetry
     private
     def run_post_process!
       post_process_blocks.each_pair do |key, future|
-        annotate(key, future.value)
+        message, instrumentation_time = execute_future(future)
+        annotate(key, message, instrumentation_time)
       end
+    end
+
+    def execute_future(future)
+      old_time = time
+      value = future.value
+      [value, (time - old_time)]
     end
 
   end
