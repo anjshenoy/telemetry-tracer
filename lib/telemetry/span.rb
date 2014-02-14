@@ -76,7 +76,7 @@ module Telemetry
         value = future.value
       rescue Exception => ex
         message = ex.class.to_s + ": " + ex.message + "\n" + ex.backtrace.join("\n")
-        Telemetry::Loggers.error_logger.error(message)
+        Telemetry::Logger.error_logger.error(message)
         value = "error"
       end
       [value, (time - old_time)]

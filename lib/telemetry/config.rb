@@ -1,6 +1,6 @@
 require "./lib/telemetry/runner"
 require "./lib/telemetry/sinks/sink"
-require "./lib/telemetry/loggers/error_logger"
+require "./lib/telemetry/logger"
 require "logger"
 require "yaml"
 
@@ -17,7 +17,7 @@ module Telemetry
       end
       @runner = Runner.new(opts["enabled"], {"sample" => opts["sample"]}, opts["run_on_hosts"])
       if @runner.run?
-        @error_logger = Telemetry::Loggers.error_logger(opts["error_logger"])
+        @error_logger = Telemetry::Logger.error_logger(opts["error_logger"])
         @sink = Sinks::Sink.new(opts["logger"], opts["http_endpoint"], @error_logger)
       end
     end
