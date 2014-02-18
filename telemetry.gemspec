@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
   s.description = ""
   s.authors = ["Ryan Kennedy", "Anjali Shenoy"]
   s.email = 'rkennedy@yammer-inc.com'
-  s.files = ["lib/telemetry.rb"]
+  s.files = ["lib/telemetry/tracer.rb"]
   s.homepage = 'https://github.com/yammer/telemetry-tracer'
   s.license = 'Apache 2.0'
   #s.add_dependency('yajl-ruby', '>=0.8.3')
