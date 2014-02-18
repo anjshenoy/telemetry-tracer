@@ -173,7 +173,6 @@ module Telemetry
       assert_equal true, tracer.current_span.post_process_blocks["foo"].is_a?(Celluloid::Future)
     end
 
-
     it "executes any post process blocks associated with the current span when its stopped" do
       restart_celluloid
       tracer = default_tracer
