@@ -1,5 +1,5 @@
 require "test_helper"
-require "./lib/telemetry/span"
+require "telemetry/span"
 require "socket"
 
 module Telemetry

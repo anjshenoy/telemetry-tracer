@@ -1,11 +1,8 @@
-require "./lib/telemetry/span"
-require "./lib/telemetry/runner"
-require "./lib/telemetry/config"
-require "./lib/telemetry/helpers/id_maker"
-require "./lib/telemetry/helpers/time_maker"
-require "./lib/telemetry/helpers/jsonifier"
-require "./lib/core/forwardable_ext"
-require "celluloid"
+require "telemetry/span"
+require "telemetry/runner"
+require "telemetry/config"
+require "telemetry/helper"
+require "core/forwardable_ext"
 
 module Telemetry
   class Tracer

@@ -1,1 +1,1 @@
-require "./telemetry/tracer"
+require "telemetry/tracer"

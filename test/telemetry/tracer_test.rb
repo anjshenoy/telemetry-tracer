@@ -1,5 +1,5 @@
 require "test_helper"
-require "./lib/telemetry/tracer"
+require "telemetry/tracer"
 
 module Telemetry
 

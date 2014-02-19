@@ -1,5 +1,4 @@
-require "./lib/telemetry/helpers/time_maker"
-require "./lib/telemetry/helpers/jsonifier"
+require "telemetry/helper"
 
 module Telemetry
   class Annotation

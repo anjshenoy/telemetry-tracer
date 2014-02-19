@@ -1,7 +1,5 @@
-require "./lib/telemetry/helpers/id_maker"
-require "./lib/telemetry/helpers/time_maker"
-require "./lib/telemetry/helpers/jsonifier"
-require "./lib/telemetry/annotation"
+require "telemetry/helper"
+require "telemetry/annotation"
 require "celluloid"
 
 module Telemetry

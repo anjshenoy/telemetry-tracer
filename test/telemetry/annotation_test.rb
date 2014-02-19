@@ -1,5 +1,5 @@
 require "test_helper"
-require "./lib/telemetry/annotation"
+require "telemetry/annotation"
 
 module Telemetry
   describe Annotation do
