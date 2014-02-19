@@ -1,6 +1,6 @@
-require "./lib/telemetry/runner"
-require "./lib/telemetry/sinks/sink"
-require "./lib/telemetry/logger"
+require "telemetry/runner"
+require "telemetry/sinks/sink"
+require "telemetry/logger"
 require "logger"
 require "yaml"
 
