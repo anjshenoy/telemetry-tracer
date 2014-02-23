@@ -30,7 +30,7 @@ module Telemetry
 
     class LogSink
       def initialize(logfile)
-        @logger = Logger.new(logfile)
+        @logger = ::Logger.new(logfile)
       end
 
       def process(trace)
