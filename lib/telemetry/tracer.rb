@@ -88,8 +88,8 @@ module Telemetry
 
     private
     def flush!
-      @flushed = true
       @sink.process(self)
+      @flushed = true
     end
 
     def check_dirty_bits(trace_id, parent_span_id)
