@@ -105,10 +105,13 @@ module Telemetry
     end
 
     class << self
-      def current(opts={})
+      def current
+        @tracer
+      end
+
+      def find_or_create(opts={})
         @tracer ||= build(opts)
       end
-      alias_method :find_or_create, :current
 
       def build(opts={})
         @config ||= Telemetry::Config.new(opts)

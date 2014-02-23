@@ -10,7 +10,6 @@ module Telemetry
         Tracer.instance_variable_set("@tracer", nil)
         Tracer.instance_variable_set("@config", nil)
       end
-      alias_method :new!, :reset
     end
   end
 
@@ -20,15 +19,19 @@ module Telemetry
       Tracer.reset
     end
 
-    it "loads a new trace if one does not exist" do
-      tracer = Tracer.current
-      assert_equal Tracer, tracer.class
-    end
-
-    it "it uses the current trace if it does exist" do
+    it "creates a trace if one does not already exist" do
       tracer1 = Tracer.find_or_create
       tracer2 = Tracer.find_or_create
       assert_equal tracer1, tracer2
+    end
+
+    it "returns the currently existing trace" do
+      Tracer.reset
+      tracer = Tracer.current
+      assert_equal nil, tracer
+
+      tracer = Tracer.find_or_create
+      assert_equal Tracer, tracer.class
     end
 
     it "initializes itself with a trace id if one is passed" do
@@ -190,8 +193,7 @@ module Telemetry
 
     private
     def default_tracer(override_opts={})
-      Tracer.reset
-      Tracer.current(opts.merge!(override_opts))
+      Tracer.find_or_create(opts.merge!(override_opts))
     end
 
     def opts
