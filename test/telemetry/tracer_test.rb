@@ -166,16 +166,18 @@ module Telemetry
     end
 
     it "passes blocks to be post processed to the current span" do
+      restart_celluloid
       tracer = default_tracer
       tracer.post_process("foo") do
         x = 2
         10.times { x = x*2 }
         x
       end
-      assert_equal true, tracer.current_span.post_process_blocks["foo"].is_a?(Proc)
+      assert_equal true, tracer.current_span.post_process_blocks["foo"].is_a?(Celluloid::Future)
     end
 
     it "executes any post process blocks associated with the current span when its stopped" do
+      restart_celluloid
       tracer = default_tracer
       tracer.start
       tracer.post_process("foo") do
