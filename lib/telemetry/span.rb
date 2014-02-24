@@ -29,8 +29,8 @@ module Telemetry
       @parent_span_id.nil?
     end
 
-    def annotate(key, message, instrumentation_time = nil, ignore_if_empty = true)
-      if !!ignore_if_empty
+    def annotate(key, message, instrumentation_time = nil, ignore_if_blank = true)
+      if !!ignore_if_blank
         if !message.to_s.empty?
           annotate_with_time(key,  message, time)
         end

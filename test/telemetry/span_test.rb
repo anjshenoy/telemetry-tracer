@@ -76,7 +76,7 @@ module Telemetry
       assert_equal annotation, span.annotations.first.params
     end
 
-    it "ignores an annotation if the message value is empty and if the ignore_if_empty option is set" do
+    it "ignores an annotation if the message value is empty and if the ignore_if_blank option is set" do
       span = Span.new
       assert_equal true, span.annotations.empty?
 
@@ -85,6 +85,10 @@ module Telemetry
 
       span.annotate("foo", "bar")
       assert_equal 1, span.annotations.size
+
+      #allow if blank
+      span.annotate("eep", nil, nil, false)
+      assert_equal 2, span.annotations.size
     end
 
     it "allows you to add a block of code to post process later" do
@@ -158,5 +162,7 @@ module Telemetry
         span.stop
       end
     end
+
+    
   end
 end
