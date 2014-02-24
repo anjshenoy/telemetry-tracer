@@ -211,6 +211,23 @@ module Telemetry
       end
     end
 
+    it "cannot restart a stale trace" do
+      tracer = default_tracer
+      tracer.apply { 2*2 }
+      assert_raises TraceFlushedException do
+        tracer.start
+      end
+    end
+
+    it "cannot stop a stale trace" do
+      tracer = default_tracer
+      tracer.apply { 2*2 }
+      assert_raises TraceFlushedException do
+        tracer.stop
+      end
+    end
+
+
     private
     def default_tracer(override_opts={})
       Tracer.find_or_create(opts.merge!(override_opts))

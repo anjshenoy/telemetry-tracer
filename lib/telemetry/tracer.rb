@@ -5,6 +5,8 @@ require "telemetry/helper"
 require "core/forwardable_ext"
 
 module Telemetry
+  class TraceFlushedException < Exception; end
+
   class Tracer
     include Helpers::IdMaker
     include Helpers::TimeMaker
@@ -42,6 +44,7 @@ module Telemetry
     end
 
     def start
+      raise TraceFlushedException.new if flushed?
       if run?
         @current_span.start
         @in_progress = true
@@ -49,6 +52,7 @@ module Telemetry
     end
 
     def stop
+      raise TraceFlushedException.new if flushed?
       if run?
         @spans.each(&:stop)
         @in_progress = false
