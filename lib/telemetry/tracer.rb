@@ -90,6 +90,7 @@ module Telemetry
     def flush!
       @sink.process(self)
       @flushed = true
+      self.class.reset
     end
 
     def check_dirty_bits(trace_id, parent_span_id)
@@ -116,6 +117,10 @@ module Telemetry
       def build(opts={})
         @config ||= Telemetry::Config.new(opts)
         new(@config.runner, @config.sink, opts)
+      end
+
+      def reset
+        @tracer = nil
       end
 
     end

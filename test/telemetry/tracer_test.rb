@@ -6,7 +6,7 @@ module Telemetry
   class Tracer
     #reset the tracer for testing purposes
     class << self
-      def reset
+      def reset_with_config
         Tracer.instance_variable_set("@tracer", nil)
         Tracer.instance_variable_set("@config", nil)
       end
@@ -14,9 +14,8 @@ module Telemetry
   end
 
   describe Tracer do
-
     after do
-      Tracer.reset
+      Tracer.reset_with_config
     end
 
     it "creates a trace if one does not already exist" do
@@ -26,7 +25,7 @@ module Telemetry
     end
 
     it "returns the currently existing trace" do
-      Tracer.reset
+      Tracer.reset_with_config
       tracer = Tracer.current
       assert_equal nil, tracer
 
@@ -188,6 +187,15 @@ module Telemetry
       processed_annotations = tracer.to_hash[:current_span][:annotations]
       assert_equal false, processed_annotations.empty?
       assert_equal 2048, processed_annotations.first["foo"]
+    end
+
+    it "terminates the trace once its stopped" do
+      tracer = default_tracer
+      tracer.apply do
+        assert_equal false, Telemetry::Tracer.current.nil?
+        2*2
+      end
+      assert_equal true, Telemetry::Tracer.current.nil?
     end
 
     private
