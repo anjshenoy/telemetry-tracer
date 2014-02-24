@@ -76,6 +76,17 @@ module Telemetry
       assert_equal annotation, span.annotations.first.params
     end
 
+    it "ignores an annotation if the message value is empty and if the ignore_if_empty option is set" do
+      span = Span.new
+      assert_equal true, span.annotations.empty?
+
+      span.annotate("foo", "")
+      assert_equal true, span.annotations.empty?
+
+      span.annotate("foo", "bar")
+      assert_equal 1, span.annotations.size
+    end
+
     it "allows you to add a block of code to post process later" do
       restart_celluloid
       span = Span.new

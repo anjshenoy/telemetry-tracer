@@ -27,8 +27,14 @@ module Telemetry
       @parent_span_id.nil?
     end
 
-    def annotate(key, message="", instrumentation_time = nil)
-      @annotations << Annotation.new({key => message}, instrumentation_time)
+    def annotate(key, message, instrumentation_time = nil, ignore_if_empty = true)
+      if !!ignore_if_empty
+        if !message.to_s.empty?
+          annotate_with_time(key,  message, time)
+        end
+      else
+        annotate_with_time(key,  message, time)
+      end
     end
 
     def post_process(name, &block)
@@ -61,6 +67,10 @@ module Telemetry
     end
 
     private
+    def annotate_with_time(key, message, time)
+      @annotations << Annotation.new({key => message}, time)
+    end
+
     def run_post_process!
       post_process_blocks.each_pair do |key, future|
         message, instrumentation_time = execute_future(future)

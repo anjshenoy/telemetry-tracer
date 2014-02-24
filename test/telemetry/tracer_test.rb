@@ -119,11 +119,10 @@ module Telemetry
     end
 
     it "applying a trace yields the trace so annotations can be added to it" do
-      annotation = {:foo => "bar"}
       tracer = default_tracer
       tracer.apply do |trace|
         assert_equal 0, trace.annotations.size
-        trace.annotate(annotation)
+        trace.annotate("foo", "bar")
         assert_equal 1, trace.annotations.size
       end
     end
