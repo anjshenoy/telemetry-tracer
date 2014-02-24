@@ -26,7 +26,7 @@ module Telemetry
         check_dirty_bits(trace_id, parent_span_id)
         @id = trace_id || generate_id
         @current_span = Span.new({:id => parent_span_id, 
-                                  :trace_id => @id,
+                                  :tracer => self,
                                   :name => opts["name"],
                                   :annotations => opts["annotations"]})
         @spans = [@current_span]
@@ -72,10 +72,17 @@ module Telemetry
 
     def start_new_span(name)
       span = Span.new({:parent_span_id => @current_span.id, 
-                       :trace_id => id, 
+                       :tracer => self, 
                        :name => name})
       @spans << span
       @current_span = span
+    end
+
+    def bump_current_span
+      if spans.size > 1
+        current_span_index = spans.index(current_span)
+        @current_span = spans[current_span_index - 1]
+      end
     end
 
     def to_hash

@@ -1,17 +1,19 @@
 require "test_helper"
 require "telemetry/span"
+require "telemetry/tracer"
 require "socket"
 
 module Telemetry
   describe Span do
+    let(:tracer) { default_tracer }
+    let(:span)   { Span.new(opts) }
+
     it "defaults to a root span if no parent_span_id is supplied" do
-      span = Span.new()
       assert span.root?
     end
 
-    it "is attached to a trace_id" do
-      span = Span.new({:trace_id => "foo"})
-      assert_equal "foo", span.trace_id
+    it "is attached to a trace" do
+      assert_equal tracer, span.tracer
     end
 
     it "sets itself up with a human reable name if one is supplied" do
@@ -20,7 +22,6 @@ module Telemetry
     end
 
     it "gets its own  4byte id" do
-      span = Span.new
       assert span.id.instance_of?(Fixnum)
       assert 8, span.id.size
     end
@@ -38,33 +39,29 @@ module Telemetry
     end
 
     it "has zero to many annotations" do
-      span = Span.new
       assert span.annotations.empty?
     end
 
     it "logs a start time in nano seconds when its initialized" do
-      span = Span.new
       span.start
       time_in_nanos = (Time.now.to_f * 1000000000).to_i
       assert span.start_time < time_in_nanos
     end
 
     it "stores the process id its executing on" do
-      assert_equal Process.pid, Span.new.pid
+      assert_equal Process.pid, span.pid
     end
 
     it "stores the fully qualified hostname its executing on" do
-      assert_equal Socket.gethostname, Span.new.hostname
+      assert_equal Socket.gethostname, span.hostname
     end
 
     it "logs the start time of the span when started" do
-      span = Span.new
       span.start
       assert_equal true, !span.start_time.nil?
     end
 
     it "logs the end time of the trace when stopped" do
-      span = Span.new
       span.stop
       assert_equal true, !span.stop_time.nil?
     end
@@ -77,7 +74,6 @@ module Telemetry
     end
 
     it "ignores an annotation if the message value is empty and if the ignore_if_blank option is set" do
-      span = Span.new
       assert_equal true, span.annotations.empty?
 
       span.annotate("foo", "")
@@ -106,7 +102,6 @@ module Telemetry
 
     it "executes any post process blocks and stores the results as new annotations when a span is stopped" do
       restart_celluloid
-      span = Span.new
       span.start
       assert_equal true, span.annotations.empty?
       span.post_process("foo") do
@@ -133,7 +128,6 @@ module Telemetry
 
     it "logs the time to process for each post process block executed" do
       restart_celluloid
-      span = Span.new
       span.start
       assert_equal true, span.annotations.empty?
       span.post_process("foo") do
@@ -146,7 +140,6 @@ module Telemetry
     end
 
     it "raises an exception if a span is restarted" do
-      span = Span.new
       span.start
       span.stop
       assert_raises SpanStoppedException do 
@@ -155,7 +148,6 @@ module Telemetry
     end
 
     it "raises an exception if a span is stopped" do
-      span = Span.new
       span.start
       span.stop
       assert_raises SpanStoppedException do 
@@ -163,6 +155,10 @@ module Telemetry
       end
     end
 
-    
+
+    private
+    def opts
+      {:tracer => tracer}
+    end
   end
 end

@@ -155,11 +155,11 @@ module Telemetry
       assert_equal "fubar2", new_span.name
       assert_equal true, (new_span.id != previous_span.id)
       assert_equal true, new_span.parent_span_id == previous_span.id
-      assert_equal true, (new_span.trace_id == previous_span.trace_id)
+      assert_equal true, (new_span.tracer.id == previous_span.tracer.id)
     end
 
     it "assigns a name to the created span if one is given" do
-      tracer = default_tracer(opts.merge({"name" => "fubar2"}))
+      tracer = default_tracer({"name" => "fubar2"})
       assert_equal "fubar2", tracer.current_span.name
     end
 
@@ -227,16 +227,14 @@ module Telemetry
       end
     end
 
-    private
-    def default_tracer(override_opts={})
-      Tracer.find_or_create(opts.merge!(override_opts))
-    end
+    it "bumps the current span if the current span has been processed" do
+      tracer = default_tracer
+      span0 = tracer.current_span
+      span1 = tracer.start_new_span("foobar")
+      assert_equal span1, tracer.current_span
+      span1.stop
 
-    def opts
-      {"enabled" => true,
-       "logger" => "/tmp/tracer.log",
-       "sample" => {"number_of_requests" => 1, 
-                   "out_of" => 1}}
+      assert_equal span0, tracer.current_span
     end
   end
 end

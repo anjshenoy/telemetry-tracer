@@ -10,13 +10,13 @@ module Telemetry
     include Helpers::TimeMaker
     include Helpers::Jsonifier
 
-    attr_reader :id, :parent_span_id, :trace_id, :name, :annotations, 
+    attr_reader :id, :parent_span_id, :tracer, :name, :annotations, 
       :start_time, :stop_time, :pid, :hostname, :post_process_blocks
 
     def initialize(opts={})
       @parent_span_id = opts[:parent_span_id]
       @id = generate_id
-      @trace_id = opts[:trace_id]
+      @tracer = opts[:tracer]
       @name = opts[:name]
       @annotations = []
       add_annotations(opts[:annotations] || {})
@@ -72,6 +72,7 @@ module Telemetry
       raise SpanStoppedException if stopped?
       @stop_time = time
       run_post_process!
+      tracer.bump_current_span
     end
 
     private
