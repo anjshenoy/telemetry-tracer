@@ -184,7 +184,7 @@ module Telemetry
         x
       end
       tracer.stop
-      processed_annotations = tracer.to_hash[:current_span][:annotations]
+      processed_annotations = tracer.to_hash[:spans].first[:annotations]
       assert_equal false, processed_annotations.empty?
       assert_equal 2048, processed_annotations.first["foo"]
     end
@@ -196,6 +196,19 @@ module Telemetry
         2*2
       end
       assert_equal true, Telemetry::Tracer.current.nil?
+    end
+
+    it "stops all spans attached to the trace that's stopped" do
+      tracer = default_tracer
+      tracer.start
+      assert_equal 1, tracer.spans.size
+      tracer.start_new_span("newspan")
+      assert_equal 2, tracer.spans.size
+      tracer.stop
+      assert_equal 2, tracer.spans.size
+      tracer.to_hash[:spans].each do |span|
+        assert_equal true, !span[:stop_time].nil?
+      end
     end
 
     private

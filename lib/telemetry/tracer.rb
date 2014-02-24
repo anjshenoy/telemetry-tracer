@@ -50,7 +50,7 @@ module Telemetry
 
     def stop
       if run?
-        @current_span.stop
+        @spans.each(&:stop)
         @in_progress = false
         flush!
       end
@@ -77,7 +77,8 @@ module Telemetry
     def to_hash
       {:id => id,
        :tainted => @reason,
-       :current_span => @current_span.to_hash
+       :current_span_id => @current_span.id,
+       :spans => spans.map(&:to_hash)
       }
     end
 
@@ -122,7 +123,6 @@ module Telemetry
       def reset
         @tracer = nil
       end
-
     end
   end
 end
