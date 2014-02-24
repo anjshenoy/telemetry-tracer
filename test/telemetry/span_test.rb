@@ -141,5 +141,22 @@ module Telemetry
       assert_equal true, !span.annotations.first.time_to_process.nil?
     end
 
+    it "raises an exception if a span is restarted" do
+      span = Span.new
+      span.start
+      span.stop
+      assert_raises SpanStoppedException do 
+        span.start
+      end
+    end
+
+    it "raises an exception if a span is stopped" do
+      span = Span.new
+      span.start
+      span.stop
+      assert_raises SpanStoppedException do 
+        span.stop
+      end
+    end
   end
 end

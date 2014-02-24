@@ -3,6 +3,8 @@ require "telemetry/annotation"
 require "celluloid"
 
 module Telemetry
+  SpanStoppedException = Class.new(Exception)
+
   class Span
     include Helpers::IdMaker
     include Helpers::TimeMaker
@@ -45,6 +47,10 @@ module Telemetry
       annotations_hash.each {|k, v| annotate(k, v) }
     end
 
+    def stopped?
+      !!@stop_time
+    end
+
     def to_hash
       {:id => id,
        :pid => pid,
@@ -58,10 +64,12 @@ module Telemetry
     end
 
     def start
+      raise SpanStoppedException if stopped?
       @start_time = time
     end
 
     def stop
+      raise SpanStoppedException if stopped?
       @stop_time = time
       run_post_process!
     end
