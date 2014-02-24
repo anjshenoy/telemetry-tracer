@@ -77,7 +77,6 @@ module Telemetry
     end
 
     it "allows you to add a block of code to post process later" do
-      restart_celluloid
       span = Span.new
       assert_equal true, span.post_process_blocks.empty?
       span.post_process("foo") do 
@@ -86,11 +85,10 @@ module Telemetry
         x
       end
       assert_equal 1, span.post_process_blocks.size
-      assert_equal true, span.post_process_blocks["foo"].is_a?(Celluloid::Future)
+      assert_equal true, span.post_process_blocks["foo"].is_a?(Proc)
     end
 
     it "executes any post process blocks and stores the results as new annotations when a span is stopped" do
-      restart_celluloid
       span = Span.new
       span.start
       assert_equal true, span.annotations.empty?
@@ -117,7 +115,6 @@ module Telemetry
     end
 
     it "logs the instrumentation time for each post process block executed" do
-      restart_celluloid
       span = Span.new
       span.start
       assert_equal true, span.annotations.empty?

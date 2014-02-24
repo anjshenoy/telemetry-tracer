@@ -1,6 +1,5 @@
 require "telemetry/helper"
 require "telemetry/annotation"
-require "celluloid"
 
 module Telemetry
   class Span
@@ -32,7 +31,7 @@ module Telemetry
     end
 
     def post_process(name, &block)
-      @post_process_blocks.merge!({name => Celluloid::Future.new(&block)})
+      @post_process_blocks.merge!({name => block })
     end
 
     def add_annotations(annotations_hash)
@@ -62,16 +61,16 @@ module Telemetry
 
     private
     def run_post_process!
-      post_process_blocks.each_pair do |key, future|
-        message, instrumentation_time = execute_future(future)
+      post_process_blocks.each_pair do |key, proc|
+        message, instrumentation_time = execute_future(proc)
         annotate(key, message, instrumentation_time)
       end
     end
 
-    def execute_future(future)
+    def execute_future(proc)
       old_time = time
       begin
-        value = future.value
+        value = proc.call
       rescue Exception => ex
         message = ex.class.to_s + ": " + ex.message + "\n" + ex.backtrace.join("\n")
         Telemetry::Logger.error_logger.error(message)
