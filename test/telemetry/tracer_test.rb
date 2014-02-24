@@ -111,9 +111,9 @@ module Telemetry
     it "applying a trace around a block logs the start and end times for the current span" do
       tracer = default_tracer
       tracer.apply do
+        assert_equal true, !tracer.current_span.start_time.nil?
         2*2
       end
-      assert_equal true, !tracer.current_span.start_time.nil?
       assert_equal true, !tracer.current_span.stop_time.nil?
     end
 
@@ -226,7 +226,6 @@ module Telemetry
         tracer.stop
       end
     end
-
 
     private
     def default_tracer(override_opts={})
