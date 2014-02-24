@@ -5,20 +5,20 @@ module Telemetry
     include Helpers::TimeMaker
     include Helpers::Jsonifier
 
-    attr_reader :params, :log_time, :instrumentation_time
+    attr_reader :params, :log_time, :time_to_process
 
-    def initialize(params={}, instrumentation_time=nil)
+    def initialize(params={}, time_to_process=nil)
       @params = params
       @log_time = time
-      if !instrumentation_time.nil?
-        @instrumentation_time = instrumentation_time
+      if !time_to_process.nil?
+        @time_to_process = time_to_process
       end
     end
 
     def to_hash
       hash = params.merge({:time => log_time})
-      if !instrumentation_time.nil?
-        hash.merge!({:instrumentation_time => instrumentation_time})
+      if !time_to_process.nil?
+        hash.merge!({:time_to_process => time_to_process})
       end
       hash
     end

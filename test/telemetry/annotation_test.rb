@@ -21,9 +21,9 @@ module Telemetry
       assert_equal true, !@a.to_hash[:time].nil?
     end
 
-    it "logs instrumentation time if one is provided" do
+    it "logs the time to process if one is provided" do
       a = Annotation.new(hash, 1.123)
-      assert_equal 1.123, a.instrumentation_time
+      assert_equal 1.123, a.time_to_process
     end
 
     private

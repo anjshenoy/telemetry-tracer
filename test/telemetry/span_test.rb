@@ -114,7 +114,7 @@ module Telemetry
       assert_equal processed_hash2, span.annotations.last.params
     end
 
-    it "logs the instrumentation time for each post process block executed" do
+    it "logs the time to process for each post process block executed" do
       span = Span.new
       span.start
       assert_equal true, span.annotations.empty?
@@ -124,7 +124,7 @@ module Telemetry
         x
       end
       span.stop
-      assert_equal true, !span.annotations.first.instrumentation_time.nil?
+      assert_equal true, !span.annotations.first.time_to_process.nil?
     end
 
   end
