@@ -1,5 +1,5 @@
-require "test_helper"
-require "./lib/core/forwardable_ext"
+require "spec_helper"
+require "core/forwardable_ext"
 
 class Dummy
   extend SimpleForwardable
@@ -31,17 +31,16 @@ module Telemetry
   describe SimpleForwardable do
     let(:dummy) {Dummy.new}
 
-
     it "delegates a method to an associated object" do
       dummy_association = dummy.dummy_association
-      assert_equal dummy_association.boo, dummy.boo
+      expect(dummy.boo).to eq(dummy_association.boo)
     end
 
     it "delegates a list of methods to an associated object" do
       dummy_association = dummy.dummy_association
 
       [:foo, :bar].each do |method_name|
-        assert_equal dummy_association.send(method_name), dummy.send(method_name)
+        expect(dummy.send(method_name)).to eq(dummy_association.send(method_name))
       end
     end
   end
