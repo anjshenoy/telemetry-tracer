@@ -1,8 +1,7 @@
-require "test_helper"
+require "spec_helper"
 require "telemetry/tracer"
 
 module Telemetry
-
   class Tracer
     #reset the tracer for testing purposes
     class << self
@@ -14,6 +13,7 @@ module Telemetry
   end
 
   describe Tracer do
+
     after do
       Tracer.reset_with_config
     end
@@ -21,146 +21,154 @@ module Telemetry
     it "creates a trace if one does not already exist" do
       tracer1 = Tracer.find_or_create
       tracer2 = Tracer.find_or_create
-      assert_equal tracer1, tracer2
+      expect(tracer1).to eq(tracer2)
     end
 
     it "returns the currently existing trace" do
       Tracer.reset_with_config
       tracer = Tracer.current
-      assert_equal nil, tracer
+      expect(tracer).to be_nil
 
       tracer = Tracer.find_or_create
-      assert_equal Tracer, tracer.class
+      expect(tracer.class).to eq(Tracer)
     end
 
     it "initializes itself with a trace id if one is passed" do
       trace_id = "abc123"
       tracer = default_tracer({"trace_id" => trace_id, "parent_span_id" => "fubar"})
-      assert_equal trace_id, tracer.id
+      expect(tracer.id).to eq(trace_id)
     end
 
     it "generates a 64bit id for itself if a trace_id is not supplied" do
       tracer = default_tracer
-      assert_equal 8, tracer.id.size
+      expect(tracer.id.size).to eq(8)
     end
 
-    #we don't want to raise exceptions unless they can be logged somewhere
     it "markes itself as dirty and gives a reason if either trace_id is present but parent span id isn't" do
       tracer = default_tracer({"trace_id" => "fubar123"})
-      assert tracer.dirty?
-      assert_equal "trace_id present; parent_span_id not present.", tracer.to_hash[:tainted]
+      expect(tracer.dirty?).to be_true
+      expect(tracer.to_hash[:tainted]).to eq("trace_id present; parent_span_id not present.")
     end
 
     it "markes itself as dirty if trace id is not present but parent_span_id is" do
       tracer = default_tracer({"enabled" => true, "parent_span_id" => "fubar123"})
-      assert_equal true, tracer.dirty?
-      assert_equal "trace_id not present; parent_span_id present. Auto generating trace id", tracer.to_hash[:tainted]
+      expect(tracer.dirty?).to be_true
+      expect(tracer.to_hash[:tainted]).to eq("trace_id not present; parent_span_id present. Auto generating trace id")
     end
 
     it "comes with a brand new span out of the box" do
       tracer = default_tracer
-      assert_equal tracer.spans.size, 1
-      assert tracer.spans.first.instance_of?(Span)
+      expect(tracer.spans.size).to eq(1)
+      expect(tracer.spans.first.class).to eq(Span)
     end
 
     it "passes any annotations to the current span" do
       tracer = default_tracer
-      assert tracer.current_span.annotations.empty?
+      expect(tracer.current_span.annotations.empty?).to be_true
+
       tracer.annotate("UserAgent", "Firefox")
-      assert_equal 1, tracer.current_span.annotations.size
+      expect(tracer.current_span.annotations.size).to eq(1)
     end
 
     it "only does initializations if its allowed to run" do
       tracer = default_tracer({"enabled" => false, "trace_id" => "123", "parent_span_id" => "234"})
-      assert_equal nil, tracer.spans
-      assert_equal nil, tracer.id
-      assert_equal nil, tracer.current_span
+      expect(tracer.spans).to be_nil
+      expect(tracer.id).to be_nil
+      expect(tracer.current_span).to be_nil
     end
 
     it "accepts an override flag which it passes to the runner object" do
       tracer = default_tracer
-      assert_equal true, tracer.run?
+      expect(tracer.run?).to be_true
 
       tracer.override = false
-      assert_equal false, tracer.run?
+      expect(tracer.run?).to be_false
     end
 
     it "runs the start method of a trace only if its allowed to run" do
       tracer = default_tracer({"enabled" => false})
-      assert_equal false, tracer.in_progress?
+      expect(tracer.in_progress?).to be_false
+
       tracer.start
-      assert_equal false, tracer.in_progress?
+      expect(tracer.in_progress?).to be_false
     end
 
     it "runs the stop method of a trace only if its allowed to run" do
       tracer = default_tracer({:enabled => false})
-      assert_equal false, tracer.in_progress?
+      expect(tracer.in_progress?).to be_false
+
       tracer.stop
-      assert_equal false, tracer.in_progress?
+      expect(tracer.in_progress?).to be_false
     end
 
     it "turns off the progress sign after its been stopped" do
       tracer = default_tracer
-      assert_equal false, tracer.in_progress?
+      expect(tracer.in_progress?).to be_false
+
       tracer.start
-      assert_equal true, tracer.in_progress?
+      expect(tracer.in_progress?).to be_true
+
       tracer.stop
-      assert_equal false, tracer.in_progress?
+      expect(tracer.in_progress?).to be_false
     end
 
     it "applying a trace around a block logs the start and end times for the current span" do
       tracer = default_tracer
       tracer.apply do
-        assert_equal true, !tracer.current_span.start_time.nil?
+        expect(tracer.current_span.start_time.nil?).to be_false
         2*2
       end
-      assert_equal true, !tracer.current_span.stop_time.nil?
+      expect(tracer.current_span.stop_time.nil?).to be_false
     end
 
     it "applying a trace yields the trace so annotations can be added to it" do
       tracer = default_tracer
       tracer.apply do |trace|
-        assert_equal 0, trace.annotations.size
+        expect(tracer.annotations).to be_empty
+
         trace.annotate("foo", "bar")
-        assert_equal 1, trace.annotations.size
+        expect(tracer.annotations.size).to eq(1)
       end
     end
 
     it "can be started only if its allowed to run" do
       tracer = default_tracer({"enabled" => false})
-      assert_equal false, tracer.run?
+      expect(tracer.run?).to be_false
+
       tracer.start
-      assert_equal false, tracer.in_progress?
+      expect(tracer.in_progress?).to be_false
     end
 
     it "can be applied only if its allowed to run" do
       tracer = default_tracer({"enabled" => false})
-      assert_equal false, tracer.run?
+      expect(tracer.run?).to be_false
+
       tracer.apply do |trace|
-        assert_equal true, trace.nil?
+        expect(tracer.in_progress?).to be_false
       end
     end
 
     it "sets the flushed state to true once its flushed" do
       tracer = default_tracer
-      assert_equal false, tracer.flushed?
+      expect(tracer.flushed?).to be_false
+
       tracer.stop
-      assert_equal true, tracer.flushed?
+      expect(tracer.flushed?).to be_true
     end
 
     it "starting a new span makes the current span the parent span" do
       tracer = default_tracer
       previous_span = tracer.current_span
       new_span = tracer.start_new_span("fubar2")
-      assert_equal "fubar2", new_span.name
-      assert_equal true, (new_span.id != previous_span.id)
-      assert_equal true, new_span.parent_span_id == previous_span.id
-      assert_equal true, (new_span.tracer.id == previous_span.tracer.id)
+      expect(new_span.name).to eq("fubar2")
+      expect(new_span.id).not_to eq(previous_span.id)
+      expect(new_span.parent_span_id).to eq(previous_span.id)
+      expect(new_span.tracer.id).to eq(previous_span.tracer.id)
     end
 
     it "assigns a name to the created span if one is given" do
       tracer = default_tracer({"name" => "fubar2"})
-      assert_equal "fubar2", tracer.current_span.name
+      expect(tracer.current_span.name).to eq("fubar2")
     end
 
     it "passes blocks to be post processed to the current span" do
@@ -171,7 +179,8 @@ module Telemetry
         10.times { x = x*2 }
         x
       end
-      assert_equal true, tracer.current_span.post_process_blocks["foo"].is_a?(Celluloid::Future)
+
+      expect(tracer.current_span.post_process_blocks["foo"].class).to eq(Celluloid::Future)
     end
 
     it "executes any post process blocks associated with the current span when its stopped" do
@@ -185,56 +194,55 @@ module Telemetry
       end
       tracer.stop
       processed_annotations = tracer.to_hash[:spans].first[:annotations]
-      assert_equal false, processed_annotations.empty?
-      assert_equal 2048, processed_annotations.first["foo"]
+      expect(processed_annotations.size).to eq(1)
+      expect(processed_annotations.first["foo"]).to eq(2048)
     end
 
     it "terminates the trace once its stopped" do
       tracer = default_tracer
       tracer.apply do
-        assert_equal false, Telemetry::Tracer.current.nil?
+        expect(Telemetry::Tracer.current).not_to be_nil
         2*2
       end
-      assert_equal true, Telemetry::Tracer.current.nil?
+      expect(Telemetry::Tracer.current).to be_nil
     end
 
     it "stops all spans attached to the trace that's stopped" do
       tracer = default_tracer
       tracer.start
-      assert_equal 1, tracer.spans.size
+      expect(tracer.spans.size).to eq(1)
+
       tracer.start_new_span("newspan")
-      assert_equal 2, tracer.spans.size
+      expect(tracer.spans.size).to eq(2)
+
       tracer.stop
-      assert_equal 2, tracer.spans.size
+      expect(tracer.spans.size).to eq(2)
+
       tracer.to_hash[:spans].each do |span|
-        assert_equal true, !span[:stop_time].nil?
+        expect(span[:stop_time]).not_to be_nil
       end
     end
 
     it "cannot restart a stale trace" do
       tracer = default_tracer
       tracer.apply { 2*2 }
-      assert_raises TraceFlushedException do
-        tracer.start
-      end
+      expect{tracer.start}.to raise_error(TraceFlushedException)
     end
 
     it "cannot stop a stale trace" do
       tracer = default_tracer
       tracer.apply { 2*2 }
-      assert_raises TraceFlushedException do
-        tracer.stop
-      end
+      expect{tracer.stop}.to raise_error(TraceFlushedException)
     end
 
     it "bumps the current span if the current span has been processed" do
       tracer = default_tracer
       span0 = tracer.current_span
       span1 = tracer.start_new_span("foobar")
-      assert_equal span1, tracer.current_span
-      span1.stop
+      expect(tracer.current_span).to eq(span1)
 
-      assert_equal span0, tracer.current_span
+      span1.stop
+      expect(tracer.current_span).to eq(span0)
     end
   end
 end
