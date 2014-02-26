@@ -1,5 +1,6 @@
 require "spec_helper"
 require "telemetry/helpers/jsonifier"
+require "yajl"
 
 module Telemetry
   class DummyWithHash
@@ -16,8 +17,8 @@ module Telemetry
 
   describe DummyWithHash do
     it "calling to_json returns the jsonified hash of the object" do
-      hash = {:a => "b"}
-      expect(DummyWithHash.new.to_json).to eq(hash.to_json)
+      expected_json = Yajl::Encoder.encode({:a => "b"})
+      expect(DummyWithHash.new.to_json).to eq(expected_json)
     end
   end
 
