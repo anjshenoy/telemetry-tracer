@@ -2,3 +2,4 @@ tags
 .rvmrc
 .rsync-filter
 *.guardfile
+Gemfile.lock
