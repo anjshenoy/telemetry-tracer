@@ -1,9 +1,17 @@
+PATH
+  remote: .
+  specs:
+    telemetry-tracer (0.0.1)
+      celluloid (~> 0.15)
+      yajl-ruby (~> 1.2)
+
 GEM
   remote: http://rubygems.org/
   specs:
     celluloid (0.15.2)
       timers (~> 1.1.0)
     diff-lcs (1.2.5)
+    rake (0.9.6)
     rspec (2.14.1)
       rspec-core (~> 2.14.0)
       rspec-expectations (~> 2.14.0)
@@ -19,6 +27,6 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  celluloid (~> 0.15)
+  rake
   rspec (~> 2.14)
-  yajl-ruby (~> 1.2)
+  telemetry-tracer!
