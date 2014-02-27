@@ -18,7 +18,6 @@ Gem::Specification.new do |s|
   s.add_dependency 'celluloid', '~> 0.15'
   s.add_dependency 'yajl-ruby', '~> 1.2'
   s.add_development_dependency 'rspec', '~> 2.14'
-  s.add_development_dependency 'rake'
 
   s.require_paths = ["lib"]
 end
