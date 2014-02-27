@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/yammer/telemetry-tracer.png?branch=master)](https://travis-ci.org/yammer/telemetry-tracer)
+
 telemetry-tracer
 ================
 
