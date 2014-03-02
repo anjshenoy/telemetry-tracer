@@ -96,6 +96,7 @@ module Telemetry
 
     def to_hash
       return {} if !run?
+
       {:id => id.to_s,
        :tainted => @reason,
        :time_to_instrument_trace_bits_only => @instrumentation_time,
