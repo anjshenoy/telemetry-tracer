@@ -1,6 +1,5 @@
 require "spec_helper"
 require "telemetry/annotation"
-require "pp"
 
 module Telemetry
   describe Annotation do
@@ -16,7 +15,7 @@ module Telemetry
 
     it "comes with a to_hash method which lists its internals" do
       expect(a.to_hash["foo"]).to eq(hash["foo"])
-      expect(a.to_hash[:time]).not_to be_nil
+      expect(a.to_hash[:logged_at]).not_to be_nil
     end
 
     it "logs the time to process if one is provided" do

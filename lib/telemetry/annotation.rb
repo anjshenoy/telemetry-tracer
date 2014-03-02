@@ -16,9 +16,9 @@ module Telemetry
     end
 
     def to_hash
-      hash = params.merge({:time => log_time})
+      hash = params.merge({:logged_at => log_time.to_s})
       if !time_to_process.nil?
-        hash.merge!({:time_to_process => time_to_process})
+        hash.merge!({:time_to_process => time_to_process.to_s})
       end
       hash
     end

@@ -87,9 +87,9 @@ module Telemetry
     end
 
     def to_hash
-      {:id => id,
+      {:id => id.to_s,
        :tainted => @reason,
-       :current_span_id => @current_span.id,
+       :current_span_id => @current_span.id.to_s,
        :spans => spans.map(&:to_hash)
       }
     end
