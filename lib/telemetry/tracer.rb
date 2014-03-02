@@ -2,6 +2,7 @@ require "telemetry/span"
 require "telemetry/runner"
 require "telemetry/config"
 require "telemetry/helper"
+require "telemetry/helpers/timer"
 require "core/forwardable_ext"
 
 module Telemetry
@@ -11,6 +12,7 @@ module Telemetry
     include Helpers::IdMaker
     include Helpers::TimeMaker
     include Helpers::Jsonifier
+    include Helpers::Timer
     extend SimpleForwardable
 
     attr_reader :spans, :id, :current_span, :runner
@@ -21,15 +23,17 @@ module Telemetry
     def initialize(runner, sink, opts={})
       @runner = runner
       if run?
-        @sink = sink
-        trace_id, parent_span_id = opts["trace_id"], opts["parent_span_id"]
-        check_dirty_bits(trace_id, parent_span_id)
-        @id = trace_id || generate_id
-        @current_span = Span.new({:id => parent_span_id, 
-                                  :tracer => self,
-                                  :name => opts["name"],
-                                  :annotations => opts["annotations"]})
-        @spans = [@current_span]
+        instrument do
+          @sink = sink
+          trace_id, parent_span_id = opts["trace_id"], opts["parent_span_id"]
+          check_dirty_bits(trace_id, parent_span_id)
+          @id = trace_id || generate_id
+          @current_span = Span.new({:id => parent_span_id, 
+                                    :tracer => self,
+                                    :name => opts["name"],
+                                    :annotations => opts["annotations"]})
+          @spans = [@current_span]
+        end
       end
       @in_progress = false
       @flushed = false
@@ -46,16 +50,20 @@ module Telemetry
     def start
       raise TraceFlushedException.new if flushed?
       if run?
-        @current_span.start
-        @in_progress = true
+        instrument do
+          @current_span.start
+          @in_progress = true
+        end
       end
     end
 
     def stop
       raise TraceFlushedException.new if flushed?
       if run?
-        @spans.each(&:stop)
-        @in_progress = false
+        instrument do
+          @spans.each(&:stop)
+          @in_progress = false
+        end
         flush!
       end
     end
@@ -87,8 +95,10 @@ module Telemetry
     end
 
     def to_hash
+      return {} if !run?
       {:id => id.to_s,
        :tainted => @reason,
+       :time_to_instrument_trace_bits_only => @instrumentation_time,
        :current_span_id => @current_span.id.to_s,
        :spans => spans.map(&:to_hash)
       }

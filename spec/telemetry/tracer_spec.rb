@@ -250,5 +250,18 @@ module Telemetry
       span1.stop
       expect(tracer.current_span).to eq(span0)
     end
+
+    it "logs the instrumnentation time only if allowed to run" do
+      tracer = default_tracer(tracer_opts.merge({"enabled" => false}))
+      tracer.apply { 2*2 }
+      expect(tracer.to_hash.has_key?(:time_to_instrument_trace_bits_only)).to be_false
+    end
+
+    it "logs the instrumnentation time when stopped and if allowed to run" do
+      tracer = default_tracer(tracer_opts.merge({:enabled => false}))
+
+      tracer.apply { 2*2 }
+      expect(tracer.to_hash[:time_to_instrument_trace_bits_only]).not_to be_nil
+    end
   end
 end
