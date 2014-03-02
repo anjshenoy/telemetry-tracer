@@ -263,5 +263,14 @@ module Telemetry
       tracer.apply { 2*2 }
       expect(tracer.to_hash[:time_to_instrument_trace_bits_only]).not_to be_nil
     end
+
+    it "calling fetch takes config options and an override flag and finds or creates a trace" do
+      tracer = Telemetry::Tracer.fetch(tracer_opts, true)
+
+      expect(tracer.run?).to be_true
+
+      tracer.override = false
+      expect(tracer.run?).to be_false
+    end
   end
 end

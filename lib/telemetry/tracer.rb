@@ -146,6 +146,12 @@ module Telemetry
       def reset
         @tracer = nil
       end
+
+      def fetch(opts, override)
+        tracer = find_or_create(opts)
+        tracer.override = override
+        tracer
+      end
     end
   end
 end
