@@ -61,9 +61,10 @@ module Telemetry
       expect(span.start_time).not_to be_nil
     end
 
-    it "logs the end time when stopped" do
+    it "logs the duration of the span  when stopped" do
+      span.start
       span.stop
-      expect(span.stop_time).not_to be_nil
+      expect(span.duration).not_to be_nil
     end
 
     it "creates annotations if any are supplied at create time" do
@@ -156,6 +157,15 @@ module Telemetry
       span.start
       span.stop
       expect {span.stop}.to raise_error(SpanStoppedException)
+    end
+
+
+    it "computes duration of a span only when its been stopped" do
+      span.start
+      expect(span.duration).to be_nil
+
+      span.stop
+      expect(span.duration).not_to be_nil
     end
 
     private

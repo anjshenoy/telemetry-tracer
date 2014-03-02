@@ -11,7 +11,7 @@ module Telemetry
     include Helpers::Jsonifier
 
     attr_reader :id, :parent_span_id, :tracer, :name, :annotations, 
-      :start_time, :stop_time, :pid, :hostname, :post_process_blocks
+      :start_time, :duration, :pid, :hostname, :post_process_blocks
 
     def initialize(opts={})
       @parent_span_id = opts[:parent_span_id]
@@ -58,7 +58,7 @@ module Telemetry
        :parent_span_id => parent_span_id,
        :name => name,
        :start_time => start_time,
-       :stop_time => stop_time,
+       :duration => duration,
        :annotations => annotations.map(&:to_hash),
       }
     end
@@ -73,6 +73,12 @@ module Telemetry
       @stop_time = time
       run_post_process!
       tracer.bump_current_span
+    end
+
+    def duration
+      if stopped?
+        @stop_time - @start_time
+      end
     end
 
     private

@@ -112,13 +112,13 @@ module Telemetry
       expect(tracer.in_progress?).to be_false
     end
 
-    it "applying a trace around a block logs the start and end times for the current span" do
+    it "applying a trace around a block logs the start time and duration for the current span" do
       tracer = default_tracer
       tracer.apply do
         expect(tracer.current_span.start_time.nil?).to be_false
         2*2
       end
-      expect(tracer.current_span.stop_time.nil?).to be_false
+      expect(tracer.current_span.duration.nil?).to be_false
     end
 
     it "applying a trace yields the trace so annotations can be added to it" do
@@ -164,6 +164,12 @@ module Telemetry
       expect(new_span.id).not_to eq(previous_span.id)
       expect(new_span.parent_span_id).to eq(previous_span.id)
       expect(new_span.tracer.id).to eq(previous_span.tracer.id)
+    end
+
+    it "starting a new span automatically logs the start time of that span" do
+      tracer = default_tracer
+      new_span = tracer.start_new_span("fubar2")
+      expect(new_span.start_time).not_to be_nil
     end
 
     it "assigns a name to the created span if one is given" do
@@ -219,7 +225,7 @@ module Telemetry
       expect(tracer.spans.size).to eq(2)
 
       tracer.to_hash[:spans].each do |span|
-        expect(span[:stop_time]).not_to be_nil
+        expect(span[:duration]).not_to be_nil
       end
     end
 
