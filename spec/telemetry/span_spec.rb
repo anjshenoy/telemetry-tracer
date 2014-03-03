@@ -168,6 +168,53 @@ module Telemetry
       expect(span.duration).not_to be_nil
     end
 
+    it "allows for itself to be wrapped around a block while yielding itself" do
+      span.apply do |yielded_span|
+        expect(yielded_span).to eq(span)
+        expect(yielded_span.in_progress?).to be_true
+        2*2
+      end
+      expect(span.stopped?).to be_true
+    end
+
+    it "takes a span name as an optional parameter when applying itself around a block" do
+      span.apply("foo") do |yielded_span|
+        expect(yielded_span.name).to eq("foo")
+        2*2
+      end
+    end
+
+    it "takes an optional name parameter when starting" do
+      span.start("foo")
+      expect(span.name).to eq("foo")
+    end
+
+    it "can set the name of the span at any time" do
+      expect(span.name).to be_nil
+      span.name = "foo"
+      expect(span.name).to eq("foo")
+    end
+
+    it "only sets the name if one is provided" do
+      span.name = nil
+      expect(span.name).to be_nil
+    end
+
+    it "cannot the name once the span has been stopped" do
+      expect(span.name).to be_nil
+      span.apply do |span|
+        2*2
+      end
+      expect {span.name="foo"}.to raise_error(SpanStoppedException)
+    end
+
+    it "stops progress once its been stopped" do
+      span.start
+      expect(span.in_progress?).to be_true
+      span.stop
+      expect(span.in_progress?).to be_false
+    end
+
     private
     def opts
       {:tracer => tracer}

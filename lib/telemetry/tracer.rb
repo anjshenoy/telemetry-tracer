@@ -78,7 +78,7 @@ module Telemetry
       end
     end
 
-    def start_new_span(name)
+    def start_new_span(name=nil)
       span = Span.new({:parent_span_id => @current_span.id, 
                        :tracer => self, 
                        :name => name})

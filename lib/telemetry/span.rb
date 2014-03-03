@@ -63,16 +63,34 @@ module Telemetry
       }
     end
 
-    def start
+    def in_progress?
+      !!@in_progress
+    end
+
+    def name=(name)
       raise SpanStoppedException if stopped?
+      @name = name if name
+    end
+
+    def start(name=nil)
+      raise SpanStoppedException if stopped?
+      @name = name if !name.nil?
       @start_time = time
+      @in_progress = true
     end
 
     def stop
       raise SpanStoppedException if stopped?
       @stop_time = time
       run_post_process!
+      @in_progress = false
       tracer.bump_current_span
+    end
+
+    def apply(name=nil, &block)
+      start(name)
+      yield self
+      stop
     end
 
     def duration
