@@ -286,5 +286,25 @@ module Telemetry
       tracer.stop
       expect(tracer.spans.first.stopped?).to be_true
     end
+
+    it "can apply a new span around a given block of code" do
+      tracer = default_tracer
+
+      current_span = tracer.current_span
+      tracer.apply_new_span do |span|
+        expect(tracer.current_span).to eq(span)
+        expect(tracer.current_span).not_to eq(current_span)
+        expect(span.in_progress?).to be_true
+      end
+      expect(tracer.spans.size).to eq(2)
+    end
+
+    it "can apply a new span with an optional name parameter" do
+      tracer = default_tracer
+
+      tracer.apply_new_span("foo") do |span|
+        expect(span.name).to eq("foo")
+      end
+    end
   end
 end
