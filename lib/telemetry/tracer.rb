@@ -61,7 +61,9 @@ module Telemetry
       raise TraceFlushedException.new if flushed?
       if run?
         instrument do
-          @spans.each(&:stop)
+          @spans.each do |span|
+            span.stop unless span.stopped?
+          end
           @in_progress = false
         end
         flush!
@@ -109,6 +111,11 @@ module Telemetry
       !!@flushed
     end
 
+    def apply_new_span(name=nil, &block)
+      start_new_span.apply(name) do |span|
+        yield span
+      end
+    end
 
     private
     def flush!

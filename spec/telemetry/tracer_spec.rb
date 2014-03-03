@@ -272,5 +272,19 @@ module Telemetry
       tracer.override = false
       expect(tracer.run?).to be_false
     end
+
+    it "stops a span only if its in progress" do
+      tracer = default_tracer
+      tracer.start
+      tracer.apply_new_span do
+        2*2
+      end
+
+      expect(tracer.spans.last.stopped?).to be_true
+      expect(tracer.spans.first.stopped?).to be_false
+
+      tracer.stop
+      expect(tracer.spans.first.stopped?).to be_true
+    end
   end
 end
