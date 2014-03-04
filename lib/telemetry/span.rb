@@ -32,10 +32,10 @@ module Telemetry
     def annotate(key, message, instrumentation_time = nil, ignore_if_blank=true)
       if !!ignore_if_blank
         if !message.to_s.empty?
-          annotate_with_time(key,  message, time)
+          annotate_with_time(key,  message, instrumentation_time)
         end
       else
-        annotate_with_time(key,  message, time)
+        annotate_with_time(key,  message, instrumentation_time)
       end
     end
 
