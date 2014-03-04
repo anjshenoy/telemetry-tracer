@@ -55,7 +55,7 @@ module Telemetry
       {:id => id.to_s,
        :pid => pid,
        :hostname => hostname,
-       :parent_span_id => parent_span_id,
+       :parent_span_id => parent_span_id.to_s,
        :name => name,
        :start_time => start_time.to_s,
        :duration => duration,
