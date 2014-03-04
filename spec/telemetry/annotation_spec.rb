@@ -23,6 +23,14 @@ module Telemetry
       expect(a.time_to_process).to eq(1.123)
     end
 
+    it "slaps you in the face if you don't supply a key value pair" do
+      expect{Annotation.new(nil)}.to raise_error(InvalidAnnotationException)
+    end
+
+    it "throws an InvalidAnnotationException if the supplied params is not a hash" do
+      expect{Annotation.new("foo")}.to raise_error(InvalidAnnotationException)
+    end
+
     private
     def hash
       {"foo" => "bar"}
