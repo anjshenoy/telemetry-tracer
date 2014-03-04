@@ -16,7 +16,6 @@ Gem::Specification.new do |s|
   s.test_files = `git ls-files -- spec`.split("\n")
 
   s.add_dependency 'celluloid', '~> 0.15'
-  s.add_dependency 'yajl-ruby', '>= 0.8'
   s.add_development_dependency 'rspec', '~> 2.14'
 
   s.require_paths = ["lib"]
