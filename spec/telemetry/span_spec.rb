@@ -45,7 +45,7 @@ module Telemetry
     it "logs a start time in nano seconds when its initialized" do
       span.start
       time_in_nanos = (Time.now.to_f * 1000000000).to_i
-      expect(span.start_time).to be < time_in_nanos
+      expect(span.start_time).to be <= time_in_nanos
     end
 
     it "stores the process id its executing on" do
