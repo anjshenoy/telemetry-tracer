@@ -47,11 +47,11 @@ module Telemetry
       !!@in_progress
     end
 
-    def start
+    def start(span_name=nil)
       raise TraceFlushedException.new if flushed?
       if run?
         instrument do
-          @current_span.start
+          @current_span.start(span_name)
           @in_progress = true
         end
       end
@@ -70,9 +70,9 @@ module Telemetry
       end
     end
 
-    def apply(&block)
+    def apply(span_name=nil, &block)
       if run?
-        start
+        start(span_name)
         yield self
         stop
       else

@@ -306,5 +306,18 @@ module Telemetry
         expect(span.name).to eq("foo")
       end
     end
+
+    it "takes an optional span_name when applied around a block" do
+      tracer = default_tracer
+      tracer.apply("foo") do |trace|
+        expect(trace.current_span.name).to eq("foo")
+      end
+    end
+
+    it "takes an optional span name when started" do
+      tracer = default_tracer
+      tracer.start("foo")
+      expect(tracer.current_span.name).to eq("foo")
+    end
   end
 end
