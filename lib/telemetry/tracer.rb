@@ -28,7 +28,7 @@ module Telemetry
           trace_id, parent_span_id = opts["trace_id"], opts["parent_span_id"]
           check_dirty_bits(trace_id, parent_span_id)
           @id = trace_id || generate_id
-          @current_span = Span.new({:id => parent_span_id, 
+          @current_span = Span.new({:parent_span_id => parent_span_id, 
                                     :tracer => self,
                                     :name => opts["name"],
                                     :annotations => opts["annotations"]})
@@ -148,6 +148,13 @@ module Telemetry
       def build(opts={})
         @config ||= Telemetry::Config.new(opts)
         new(@config.runner, @config.sink, opts)
+      end
+
+      def regenerate(trace_id, span_id, opts, override)
+        existing_trace_bits = {"trace_id" => trace_id, "parent_span_id" => span_id}
+        tracer = build(opts.merge(existing_trace_bits))
+        tracer.override = override
+        tracer
       end
 
       def reset

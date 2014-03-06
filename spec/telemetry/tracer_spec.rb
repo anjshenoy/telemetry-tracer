@@ -62,6 +62,12 @@ module Telemetry
       expect(tracer.spans.first.class).to eq(Span)
     end
 
+    it "sets up the current span with a parent span id if one is supplied" do
+      tracer = default_tracer({"trace_id" => 123456789, "parent_span_id" => 456789})
+      expect(tracer.current_span.parent_span_id).to eq(456789)
+      expect(tracer.spans.size).to eq(1)
+    end
+
     it "passes any annotations to the current span" do
       tracer = default_tracer
       expect(tracer.current_span.annotations.empty?).to be_true
@@ -318,6 +324,14 @@ module Telemetry
       tracer = default_tracer
       tracer.start("foo")
       expect(tracer.current_span.name).to eq("foo")
+    end
+
+    it "regenerates a trace given a trace_id and a parent span id" do
+      tracer = Telemetry::Tracer.regenerate(123456789, 456789, tracer_opts, true)
+
+      expect(tracer.id).to eq(123456789)
+      expect(tracer.current_span.parent_span_id).to eq(456789)
+      expect(tracer.spans.size).to eq(1)
     end
   end
 end
