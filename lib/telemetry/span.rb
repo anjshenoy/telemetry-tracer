@@ -94,9 +94,7 @@ module Telemetry
     end
 
     def duration
-      if stopped?
-        @stop_time - @start_time
-      end
+      (stopped? ? (@stop_time - @start_time) : "NaN")
     end
 
     private

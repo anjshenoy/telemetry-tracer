@@ -162,10 +162,14 @@ module Telemetry
 
     it "computes duration of a span only when its been stopped" do
       span.start
-      expect(span.duration).to be_nil
+      expect(span.duration).to eq("NaN")
 
       span.stop
       expect(span.duration).not_to be_nil
+    end
+
+    it "computes duration of a span only when its been started and stopped" do
+      expect(span.duration).to eq("NaN")
     end
 
     it "allows for itself to be wrapped around a block while yielding itself" do
