@@ -3,12 +3,17 @@ require "telemetry/sinks/sink"
 require "telemetry/logger"
 require "logger"
 require "yaml"
+require "core/forwardable_ext"
 
 module Telemetry
   #spits out runner, sinks, loggers 
   #for the telemetry agent to use
   class Config
+    extend SimpleForwardable
+
     attr_reader :runner, :sink, :error_logger
+
+    delegate :run?, :override?, :override=, :to => :runner
 
     def initialize(opts={})
       config_file = opts[:config_file]

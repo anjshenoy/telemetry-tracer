@@ -4,6 +4,7 @@ require "telemetry/config"
 require "telemetry/helper"
 require "telemetry/helpers/timer"
 require "core/forwardable_ext"
+require "telemetry/instrumentation/zephyr"
 
 module Telemetry
   class TraceFlushedException < Exception; end
@@ -17,26 +18,29 @@ module Telemetry
 
     attr_reader :spans, :id, :current_span, :runner
 
-    delegate :run?, :override=, :to => :runner
+    delegate :run?, :override?, :override=, :sink, :to => :config
     delegate :annotations, :annotate, :post_process, :to => :current_span
 
-    def initialize(runner, sink, opts={})
-      @runner = runner
-      if run?
-        instrument do
-          @sink = sink
-          trace_id, parent_span_id = opts["trace_id"], opts["parent_span_id"]
-          check_dirty_bits(trace_id, parent_span_id)
-          @id = trace_id || generate_id
-          @current_span = Span.new({:parent_span_id => parent_span_id, 
-                                    :tracer => self,
-                                    :name => opts["name"],
-                                    :annotations => opts["annotations"]})
-          @spans = [@current_span]
-        end
-      end
+    def config
+      self.class.config
+    end
+
+    def initialize(opts)
       @in_progress = false
       @flushed = false
+      return if !run?
+
+      instrument do
+        @sink = sink
+        trace_id, parent_span_id = opts["trace_id"], opts["parent_span_id"]
+        check_dirty_bits(trace_id, parent_span_id)
+        @id = trace_id || generate_id
+        @current_span = Span.new({:parent_span_id => parent_span_id, 
+                                  :tracer => self,
+                                  :name => opts["name"],
+                                  :annotations => opts["annotations"]})
+        @spans = [@current_span]
+      end
     end
 
     def dirty?
@@ -49,31 +53,29 @@ module Telemetry
 
     def start(span_name=nil)
       raise TraceFlushedException.new if flushed?
-      if run?
-        instrument do
-          @current_span.start(span_name)
-          @in_progress = true
-        end
+      return if !run?
+      instrument do
+        @current_span.start(span_name)
+        @in_progress = true
       end
     end
 
     def stop
       raise TraceFlushedException.new if flushed?
-      if run?
-        instrument do
-          @spans.each do |span|
-            span.stop unless span.stopped?
-          end
-          @in_progress = false
+      return if !run?
+      instrument do
+        @spans.each do |span|
+          span.stop unless span.stopped?
         end
-        flush!
+        @in_progress = false
       end
+      flush!
     end
 
     def apply(span_name=nil, &block)
       if run?
         start(span_name)
-        yield self
+        yield self, current_span
         stop
       else
         yield
@@ -141,30 +143,40 @@ module Telemetry
         @tracer
       end
 
+      def config=(config_opts = {})
+        @config ||= Telemetry::Config.new(config_opts)
+      end
+
+      def config
+        @config
+      end
+
+      def with_config(config_opts = {})
+        self.config = config_opts
+        self
+      end
+
+      def with_override(flag = false)
+        self.override = flag
+        self
+      end
+
+      def method_missing(sym, *args, &block)
+        if config.respond_to?(sym)
+          return config.send(sym, *args, &block)
+        end
+        super
+      end
+
       def find_or_create(opts={})
-        @tracer ||= build(opts)
+        self.config = {} if self.config.nil?
+        @tracer ||= new(opts)
       end
 
-      def build(opts={})
-        @config ||= Telemetry::Config.new(opts)
-        new(@config.runner, @config.sink, opts)
-      end
-
-      def regenerate(trace_id, span_id, opts, override)
-        existing_trace_bits = {"trace_id" => trace_id, "parent_span_id" => span_id}
-        tracer = build(opts.merge(existing_trace_bits))
-        tracer.override = override
-        tracer
-      end
-
+      #TODO: should reset just clear out trace's internals?
+      #or just flat out nuke everything as below.
       def reset
         @tracer = nil
-      end
-
-      def fetch(opts, override)
-        tracer = find_or_create(opts)
-        tracer.override = override
-        tracer
       end
     end
   end

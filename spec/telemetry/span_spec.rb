@@ -5,7 +5,7 @@ require "socket"
 
 module Telemetry
   describe Span do
-    let(:tracer) { default_tracer }
+    let(:tracer) { Tracer.with_config(tracer_opts).find_or_create }
     let(:span)   { Span.new(opts) }
 
     it "defaults to a root span if no parent_span_id is supplied" do
