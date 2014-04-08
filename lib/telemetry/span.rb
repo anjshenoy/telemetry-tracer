@@ -29,13 +29,14 @@ module Telemetry
       @parent_span_id.nil?
     end
 
-    def annotate(key, message, instrumentation_time = nil, ignore_if_blank=true)
+    def annotate(key, message, ignore_if_blank = true)
       if !!ignore_if_blank
         if !message.to_s.empty?
-          annotate_with_time(key,  message, instrumentation_time)
+          add_annotation(key, message)
         end
       else
-        annotate_with_time(key,  message, instrumentation_time)
+        #dont ignore if blank
+        add_annotation(key, message)
       end
     end
 
@@ -98,14 +99,14 @@ module Telemetry
     end
 
     private
-    def annotate_with_time(key, message, time)
+    def add_annotation(key, message, time = nil)
       @annotations << Annotation.new({key => message}, time)
     end
 
     def run_post_process!
       post_process_blocks.each_pair do |key, future|
         message, instrumentation_time = execute_future(future)
-        annotate(key, message, instrumentation_time)
+        add_annotation(key, message, instrumentation_time)
       end
     end
 

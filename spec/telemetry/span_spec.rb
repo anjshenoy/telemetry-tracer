@@ -84,7 +84,7 @@ module Telemetry
       expect(span.annotations.size).to eq(1)
 
       #allow if blank
-      span.annotate("eep", nil, nil, false)
+      span.annotate("eep", nil, false)
       expect(span.annotations.size).to eq(2)
     end
 
