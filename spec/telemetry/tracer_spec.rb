@@ -14,7 +14,7 @@ module Telemetry
 
   describe Tracer do
 
-    after do
+    before do
       Tracer.reset_with_config
     end
 
