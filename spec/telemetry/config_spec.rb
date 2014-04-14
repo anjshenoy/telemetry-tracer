@@ -3,22 +3,23 @@ require "telemetry/config"
 
 module Telemetry
   describe Config do
-    let(:opts) { {"enabled" => true,
-                  "sample" => {"number_of_requests" => 1,
-                               "out_of" => 1},
-                  "logger" => "/tmp/tracer.log"}
-              }
-    let(:config) { Config.new(opts) }
+    let(:config) { Config.new(tracer_opts) }
 
     it "initializes a runner object" do
       expect(config.runner.run?).to be_true
+    end
+
+    it "switches the runner off if there is no error log device" do
+      opts = tracer_opts
+      opts.delete("error_logger")
+      expect(Config.new(opts).run?).to be_false
     end
 
     it "builds other dependencies only if the runner object decides tor run" do
       expect(config.sink).not_to be_nil
       expect(config.error_logger).not_to be_nil
 
-      config = Config.new(opts.merge({"enabled" => false}))
+      config = Config.new(tracer_opts.merge({"enabled" => false}))
       expect(config.sink).to be_nil
       expect(config.error_logger).to be_nil
     end

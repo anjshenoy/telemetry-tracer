@@ -44,5 +44,9 @@ module Telemetry
     def run?
       enabled? && override? && matching_host? && sample?
     end
+
+    def off!
+      @enabled = false
+    end
   end
 end

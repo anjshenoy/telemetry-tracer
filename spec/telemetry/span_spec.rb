@@ -147,6 +147,18 @@ module Telemetry
       expect(span.annotations.first.time_to_process).not_to be_nil
     end
 
+    it "logs the value as processing_error if an exception is raised during post processing" do
+      restart_celluloid
+      span.start
+      span.post_process("hello") do
+        raise "Hello"
+      end
+      span.stop
+
+      processed_hash = {"hello" => "processing_error"}
+      expect(span.annotations.first.params).to eq(processed_hash)
+    end
+
     it "raises an exception if a span is restarted" do
       span.start
       span.stop

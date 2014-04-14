@@ -52,5 +52,14 @@ module Telemetry
       runner.override = false
       expect(runner.override?).to be_false
     end
+
+    it "can turn itself off at any time without touching the override flag" do
+      expect(runner.run?).to be_true
+      expect(runner.override?).to be_true
+
+      runner.off!
+      expect(runner.override?).to be_true
+      expect(runner.run?).to be_false
+    end
   end
 end

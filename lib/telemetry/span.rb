@@ -117,7 +117,7 @@ module Telemetry
       rescue Exception => ex
         message = "Error processing annotation for trace_id: #{@tracer.id}, span_id: #{self.id}" + 
                    ex.class.to_s + ": " + ex.message + "\n" + ex.backtrace.join("\n")
-        Telemetry::Logger.error_logger.error(message)
+        Telemetry::Config.error_logger.error(message)
         value = "processing_error"
       end
       [value, (time - old_time)]
