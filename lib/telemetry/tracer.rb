@@ -171,7 +171,10 @@ module Telemetry
       def find_or_create(opts={})
         self.config = {} if self.config.nil?
         @tracer ||= new(opts)
+        @tracer
+
       end
+      alias_method :fetch, :find_or_create
 
       #TODO: should reset just clear out trace's internals?
       #or just flat out nuke everything as below.
