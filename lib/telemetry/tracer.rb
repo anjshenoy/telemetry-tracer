@@ -19,7 +19,6 @@ module Telemetry
     attr_reader :spans, :id, :current_span, :runner
 
     delegate :run?, :override?, :override=, :sink, :to => :config
-    delegate :annotations, :annotate, :post_process, :to => :current_span
 
     def config
       self.class.config
@@ -62,6 +61,9 @@ module Telemetry
 
     def stop
       raise TraceFlushedException.new if flushed?
+      #TODO: make an exception here.
+      #if the trace has already started
+      #let it finish
       return if !run?
       instrument do
         @spans.each do |span|
@@ -72,6 +74,8 @@ module Telemetry
       flush!
     end
 
+    #TODO: add a new method here apply_with_span
+    #see application_controller for semantics
     def apply(span_name=nil, &block)
       if run?
         start(span_name)
@@ -119,6 +123,13 @@ module Telemetry
       end
     end
 
+    def method_missing(sym, *args, &block)
+      if [:annotations, :annotate, :post_process_blocks, :post_process].include?(sym)
+          return (run? ? current_span.send(sym, *args, &block) : nil)
+      end
+      super
+    end
+
     private
     def flush!
       @sink.process(self)
@@ -157,6 +168,11 @@ module Telemetry
       end
 
       def with_override(flag = false)
+        #TODO: add self.config = {} if self.config.nil here as override is delegating to config, 
+        #so you'll get a NoMethodError if if config is null here
+
+        #reset if state change
+        reset if override? != flag
         self.override = flag
         self
       end
@@ -171,13 +187,17 @@ module Telemetry
       def find_or_create(opts={})
         self.config = {} if self.config.nil?
         @tracer ||= new(opts)
+        #TODO: this guy is not required
         @tracer
-
       end
       alias_method :fetch, :find_or_create
 
       #TODO: should reset just clear out trace's internals?
       #or just flat out nuke everything as below.
+      #no need to reset it to new here
+      #because fetch is called after override is applied
+      #and that fetches an idempotent instance if 
+      #override is switched off
       def reset
         @tracer = nil
       end

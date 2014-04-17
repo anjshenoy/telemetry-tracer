@@ -367,5 +367,83 @@ module Telemetry
       tracer.start("foo")
       expect(tracer.current_span.name).to eq("foo")
     end
+
+    it "resets the current trace if the override state is switched" do
+      Tracer.config = tracer_opts
+
+      tracer1 = Tracer.with_override(false).fetch
+      expect(tracer1.annotations).to be_nil
+
+      tracer2 = Tracer.with_override(true).fetch
+      expect(tracer1).not_to eq(tracer2)
+      expect(tracer2.annotations).to be_empty
+
+      tracer3 = Tracer.with_override(false).fetch
+      expect(tracer1).not_to eq(tracer3)
+      expect(tracer2).not_to eq(tracer3)
+      expect(tracer3.annotations).to be_nil
+    end
+
+    it "returns annotations for the current_span only if its allowed to run" do
+      Tracer.config = tracer_opts
+
+      tracer = Tracer.with_override(false).fetch
+      expect(tracer.run?).to be_false
+      expect(tracer.annotations).to be_nil
+
+      tracer = Tracer.with_override(true).fetch
+      expect(tracer.annotations).to be_empty
+    end
+
+    it "annotates the current span only if its allowed to run" do
+      Tracer.config = tracer_opts
+
+      tracer = Tracer.with_override(false).fetch
+      expect(tracer.run?).to be_false
+      tracer.annotate("key", "value")
+      expect(tracer.annotations).to be_nil
+
+      tracer = Tracer.with_override(true).fetch
+      expect(tracer.run?).to be_true
+      tracer.annotate("key", "value")
+      expect(tracer.annotations).not_to be_empty
+      expect(tracer.annotations.size).to eq(1)
+    end
+
+    it "returns post process blocks for the current span only if its allowed to run" do
+      Tracer.config = tracer_opts
+
+      tracer = Tracer.with_override(false).fetch
+      expect(tracer.run?).to be_false
+      expect(tracer.post_process_blocks).to be_nil
+
+      tracer = Tracer.with_override(true).fetch
+      expect(tracer.post_process_blocks).to be_empty
+    end
+
+    it "stores a proc for post process only if its allowed to run" do
+      Tracer.config = tracer_opts
+
+      tracer = Tracer.with_override(false).fetch
+      expect(tracer.run?).to be_false
+      tracer.post_process("key") do
+        2*2
+      end
+      expect(tracer.post_process_blocks).to be_nil
+
+
+      tracer = Tracer.with_override(true).fetch
+      expect(tracer.run?).to be_true
+      tracer.post_process("key") do
+        2*2
+      end
+      expect(tracer.post_process_blocks).not_to be_empty
+      expect(tracer.post_process_blocks.size).to eq(1)
+    end
+
+    it "anything that's not whitelisted for the current span results in a NoMethodError" do
+      tracer = Tracer.with_config(tracer_opts).with_override(true).fetch
+      expect{tracer.foo}.to raise_error(NoMethodError)
+    end
   end
 end
