@@ -75,7 +75,7 @@ module Telemetry
 
     def start(name=nil)
       raise SpanStoppedException if stopped?
-      @name = name if !name.nil?
+      @name ||= name
       @start_time = time
       @in_progress = true
     end

@@ -7,7 +7,8 @@ require "core/forwardable_ext"
 require "telemetry/instrumentation/zephyr"
 
 module Telemetry
-  class TraceFlushedException < Exception; end
+  class TraceProcessedException < Exception; end
+  class ConfigNotApplied < Exception; end
 
   class Tracer
     include Helpers::IdMaker
@@ -18,7 +19,7 @@ module Telemetry
 
     attr_reader :spans, :id, :current_span, :runner
 
-    delegate :run?, :override?, :override=, :sink, :to => :config
+    delegate :sink, :to => :config
 
     def config
       self.class.config
@@ -27,6 +28,7 @@ module Telemetry
     def initialize(opts)
       @in_progress = false
       @flushed = false
+      @run = self.class.run?
       return if !run?
 
       instrument do
@@ -42,6 +44,10 @@ module Telemetry
       end
     end
 
+    def run?
+      !!@run
+    end
+
     def dirty?
       !!@dirty
     end
@@ -51,7 +57,7 @@ module Telemetry
     end
 
     def start(span_name=nil)
-      raise TraceFlushedException.new if flushed?
+      raise TraceProcessedException.new if flushed?
       return if !run?
       instrument do
         @current_span.start(span_name)
@@ -59,22 +65,22 @@ module Telemetry
       end
     end
 
+    #TODO: a trace should throw a NotStartedException
+    # because starting a trace logs the start time
+    # and stopping it records the duration of the span
+    # which is pretty important
     def stop
-      raise TraceFlushedException.new if flushed?
-      #TODO: make an exception here.
-      #if the trace has already started
-      #let it finish
+      raise TraceProcessedException.new if flushed?
       return if !run?
       instrument do
         @spans.each do |span|
           span.stop unless span.stopped?
         end
-        @in_progress = false
       end
       flush!
     end
 
-    #TODO: add a new method here apply_with_span
+    #TODO: add a new method here apply_with_annotation
     #see application_controller for semantics
     def apply(span_name=nil, &block)
       if run?
@@ -85,6 +91,15 @@ module Telemetry
         yield
       end
     end
+
+    #def apply_with_annotation(span_name, key, value="", &block)
+    #  if run?
+    #    annotate(key, value)
+    #    apply(span_name, block)
+    #  else
+    #    yield
+    #  end
+    #end
 
     def start_new_span(name=nil)
       span = Span.new({:parent_span_id => @current_span.id, 
@@ -113,10 +128,6 @@ module Telemetry
       }
     end
 
-    def flushed?
-      !!@flushed
-    end
-
     def apply_new_span(name=nil, &block)
       start_new_span.apply(name) do |span|
         yield span
@@ -131,9 +142,14 @@ module Telemetry
     end
 
     private
+    def flushed?
+      !!@flushed
+    end
+
     def flush!
       @sink.process(self)
       @flushed = true
+      @in_progress = false
       self.class.reset
     end
 
@@ -167,15 +183,29 @@ module Telemetry
         self
       end
 
+      # override is the secondary circuit breaker and should therefore
+      # be applied on top of with_config. If config is not applied
+      # by the time we get here, raise an exception.
+      # The two possible states are:
+      # 1. override is switched from off -> on (there is no currently executing trace)
+      # 2. override is switched from on -> off (there is a currently executing trace, possibly in progress)
+      #   a. if trace is in progress -> wait till it done processing i.e. 
+      #       the stop method is called. We don't want to reset a trace that is not done.
+      #       The important thing is that no new executable traces are created 
+      #       as a result of switching from on -> off.
+      #   b. if trace is not in progress i.e its been created but not started, 
+      #       then its safe to reset it. There is the possibility of loosing a trace. 
+      #       This trace will however no longer be valid by the time the override flag 
+      #       is switched back on (even if this happens instantly i.e. the next command) 
+      #       as the request-response cycle will likely have completed with time to spare.
       def with_override(flag = false)
-        #TODO: add self.config = {} if self.config.nil here as override is delegating to config, 
-        #so you'll get a NoMethodError if if config is null here
+        raise ConfigNotApplied if !config
 
-        #reset if state change
-        reset if override? != flag
-        self.override = flag
+        reset if override? != flag && current && !current.in_progress?
+        config.override = flag
         self
       end
+      alias_method :override=, :with_override
 
       def method_missing(sym, *args, &block)
         if config.respond_to?(sym)
@@ -187,17 +217,9 @@ module Telemetry
       def find_or_create(opts={})
         self.config = {} if self.config.nil?
         @tracer ||= new(opts)
-        #TODO: this guy is not required
-        @tracer
       end
       alias_method :fetch, :find_or_create
 
-      #TODO: should reset just clear out trace's internals?
-      #or just flat out nuke everything as below.
-      #no need to reset it to new here
-      #because fetch is called after override is applied
-      #and that fetches an idempotent instance if 
-      #override is switched off
       def reset
         @tracer = nil
       end

@@ -31,16 +31,8 @@ module Telemetry
       expect(Tracer.config.runner.run?).to be_true
     end
 
-    it "accepts an override flag which enables or disables all running instances" do
-      Tracer.config = tracer_opts
-      expect(Tracer.override?).to be_true
-
-      tracer = Tracer.find_or_create
-      expect(tracer.run?).to be_true
-
-      Tracer.override = false
-      expect(Tracer.override?).to be_false
-      expect(tracer.run?).to be_false
+    it "raises a ConfigNotApplied exception if with_override is called before the config is applied" do
+      expect{Tracer.with_override(true)}.to raise_error(ConfigNotApplied)
     end
 
     it "has a with_override api which applies the override flag to all running instances" do
@@ -140,21 +132,89 @@ module Telemetry
     it "runs the stop method of a trace only if its allowed to run" do
       Tracer.config = tracer_opts.merge({"enabled" => false})
       tracer = Tracer.find_or_create
+      #TODO: there should be a tracer.start here.
       expect(tracer.in_progress?).to be_false
 
       tracer.stop
       expect(tracer.in_progress?).to be_false
     end
 
-    it "turns off the progress sign after its been stopped" do
+    it "is in progress only once its started and before its stopped" do
       tracer = Tracer.with_config(tracer_opts).find_or_create
-      expect(tracer.in_progress?).to be_false
 
+      expect(tracer.in_progress?).to be_false
       tracer.start
       expect(tracer.in_progress?).to be_true
 
       tracer.stop
       expect(tracer.in_progress?).to be_false
+    end
+
+    it "still finishes processing if the override flag is switched off after a trace starts but before it stops" do
+      tracer = Tracer.with_config(tracer_opts).find_or_create
+      expect(tracer.run?).to be_true
+
+      tracer.start
+      tracer.post_process("foo") do
+        2*2
+      end
+      expect(tracer.post_process_blocks.size).to eq(1)
+
+      Tracer.override = false
+      expect(tracer.run?).to be_true
+
+      tracer.stop
+      expected_hash = {"foo" => 4}
+      expect(tracer.annotations.first.to_hash).to include(expected_hash)
+    end
+
+    it "returns the currently executing trace even if the override flag is switched off" do
+      tracer = Tracer.with_config(tracer_opts).find_or_create
+      expect(Tracer.override?).to be_true
+
+      tracer.start
+      expect(Tracer.current).to eq(tracer)
+
+      Tracer.override = false
+      expect(Tracer.override?).to be_false
+      expect(Tracer.current).to eq(tracer)
+    end
+
+    it "resets the current trace if it isnt in progress if the override flag is switched off" do
+      tracer = Tracer.with_config(tracer_opts).find_or_create
+      expect(Tracer.override?).to be_true
+      expect(Tracer.current).to eq(tracer)
+      expect(tracer.in_progress?).to be_false
+
+      Tracer.override = false
+      expect(Tracer.override?).to be_false
+      expect(Tracer.current).to be_nil
+    end
+
+    it "doesn't do anything if there is no currently executing trace if the override flag is switched off" do
+      Tracer.config = tracer_opts
+      expect(Tracer.override?).to be_true
+      expect(Tracer.current).to be_nil
+
+      Tracer.override = false
+      expect(Tracer.override?).to be_false
+      expect(Tracer.current).to be_nil
+    end
+
+    it "resets the current trace and returns a new one each time the override state is switched" do
+      Tracer.config = tracer_opts
+
+      tracer1 = Tracer.with_override(false).fetch
+      expect(tracer1.annotations).to be_nil
+
+      tracer2 = Tracer.with_override(true).fetch
+      expect(tracer1).not_to eq(tracer2)
+      expect(tracer2.annotations).to be_empty
+
+      tracer3 = Tracer.with_override(false).fetch
+      expect(tracer1).not_to eq(tracer3)
+      expect(tracer2).not_to eq(tracer3)
+      expect(tracer3.annotations).to be_nil
     end
 
     it "applying a trace around a block logs the start time and duration for the current span" do
@@ -203,13 +263,14 @@ module Telemetry
       end
     end
 
-    it "sets the flushed state to true once its flushed" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create
-      expect(tracer.flushed?).to be_false
-
-      tracer.stop
-      expect(tracer.flushed?).to be_true
-    end
+    #it "can be applied with an annotation" do
+    #  Tracer.with_config(tracer_opts).fetch.apply_with_annotation("key", "value") do |tracer, span|
+    #    expect(tracer).not_to be_nil
+    #    expect(span).not_to be_nil
+    #    expect(tracer.current_span).to eq(span)
+    #    expect(tracer.annotations.first.to_hash).to eq(Hash.new())
+    #  end
+    #end
 
     it "starting a new span makes the current span the parent span" do
       tracer = Tracer.with_config(tracer_opts).find_or_create
@@ -287,13 +348,13 @@ module Telemetry
     it "cannot restart a stale trace" do
       tracer = Tracer.with_config(tracer_opts).find_or_create
       tracer.apply { 2*2 }
-      expect{tracer.start}.to raise_error(TraceFlushedException)
+      expect{tracer.start}.to raise_error(TraceProcessedException)
     end
 
     it "cannot stop a stale trace" do
       tracer = Tracer.with_config(tracer_opts).find_or_create
       tracer.apply { 2*2 }
-      expect{tracer.stop}.to raise_error(TraceFlushedException)
+      expect{tracer.stop}.to raise_error(TraceProcessedException)
     end
 
     it "bumps the current span if the current span has been processed" do
@@ -366,22 +427,6 @@ module Telemetry
       tracer = Tracer.with_config(tracer_opts).find_or_create
       tracer.start("foo")
       expect(tracer.current_span.name).to eq("foo")
-    end
-
-    it "resets the current trace if the override state is switched" do
-      Tracer.config = tracer_opts
-
-      tracer1 = Tracer.with_override(false).fetch
-      expect(tracer1.annotations).to be_nil
-
-      tracer2 = Tracer.with_override(true).fetch
-      expect(tracer1).not_to eq(tracer2)
-      expect(tracer2.annotations).to be_empty
-
-      tracer3 = Tracer.with_override(false).fetch
-      expect(tracer1).not_to eq(tracer3)
-      expect(tracer2).not_to eq(tracer3)
-      expect(tracer3.annotations).to be_nil
     end
 
     it "returns annotations for the current_span only if its allowed to run" do
