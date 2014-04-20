@@ -23,7 +23,8 @@ module Telemetry
         begin
           @_sink.process(trace)
         rescue Exception => ex
-          @error_logger.error ex.backtrace.join("\n")
+          @error_logger.error(ex.message << "Trace in JSON \n" << trace.to_json)
+          @error_logger.error(ex.backtrace.join("\n"))
         end
       end
     end
