@@ -92,14 +92,10 @@ module Telemetry
       end
     end
 
-    #def apply_with_annotation(span_name, key, value="", &block)
-    #  if run?
-    #    annotate(key, value)
-    #    apply(span_name, block)
-    #  else
-    #    yield
-    #  end
-    #end
+    def apply_with_annotation(span_name, key, value="", &block)
+      annotate(key, value)
+      apply(span_name, &block)
+    end
 
     def start_new_span(name=nil)
       span = Span.new({:parent_span_id => @current_span.id, 

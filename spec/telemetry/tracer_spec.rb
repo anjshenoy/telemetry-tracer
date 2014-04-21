@@ -263,14 +263,14 @@ module Telemetry
       end
     end
 
-    #it "can be applied with an annotation" do
-    #  Tracer.with_config(tracer_opts).fetch.apply_with_annotation("key", "value") do |tracer, span|
-    #    expect(tracer).not_to be_nil
-    #    expect(span).not_to be_nil
-    #    expect(tracer.current_span).to eq(span)
-    #    expect(tracer.annotations.first.to_hash).to eq(Hash.new())
-    #  end
-    #end
+    it "can be applied with an annotation" do
+      Tracer.with_config(tracer_opts).fetch.apply_with_annotation("span1", "key", "value") do |tracer, span|
+        expect(tracer).not_to be_nil
+        expect(span).not_to be_nil
+        expect(tracer.current_span).to eq(span)
+        expect(tracer.annotations.first.to_hash).to include({"key" => "value"})
+      end
+    end
 
     it "starting a new span makes the current span the parent span" do
       tracer = Tracer.with_config(tracer_opts).find_or_create
