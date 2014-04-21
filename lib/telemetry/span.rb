@@ -53,12 +53,12 @@ module Telemetry
     end
 
     def to_hash
-      {:id => id.to_s,
+      {:id => id,
        :pid => pid,
        :hostname => hostname,
-       :parent_span_id => parent_span_id.to_s,
+       :parent_span_id => parent_span_id,
        :name => name,
-       :start_time => start_time.to_s,
+       :start_time => start_time,
        :duration => duration,
        :annotations => annotations.map(&:to_hash),
       }

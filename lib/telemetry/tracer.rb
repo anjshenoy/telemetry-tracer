@@ -17,22 +17,16 @@ module Telemetry
     include Helpers::Timer
     extend SimpleForwardable
 
-    attr_reader :spans, :id, :current_span, :runner
-
-    delegate :sink, :to => :config
-
-    def config
-      self.class.config
-    end
+    attr_reader :id
 
     def initialize(opts)
       @in_progress = false
       @flushed = false
-      @run = self.class.run?
-      return if !run?
+      @enabled = self.class.run?
+      return if !enabled?
 
       instrument do
-        @sink = sink
+        @sink = self.class.config.sink
         trace_id, parent_span_id = opts["trace_id"], opts["parent_span_id"]
         check_dirty_bits(trace_id, parent_span_id)
         @id = trace_id || generate_id
@@ -44,48 +38,18 @@ module Telemetry
       end
     end
 
-    def run?
-      !!@run
-    end
-
-    def dirty?
-      !!@dirty
+    def enabled?
+      !!@enabled
     end
 
     def in_progress?
       !!@in_progress
     end
 
-    def start(span_name=nil)
-      raise TraceProcessedException.new if flushed?
-      return if !run?
-      instrument do
-        @current_span.start(span_name)
-        @in_progress = true
-      end
-    end
-
-    #TODO: a trace should throw a NotStartedException
-    # because starting a trace logs the start time
-    # and stopping it records the duration of the span
-    # which is pretty important
-    def stop
-      raise TraceProcessedException.new if flushed?
-      return if !run?
-      instrument do
-        @spans.each do |span|
-          span.stop unless span.stopped?
-        end
-      end
-      flush!
-    end
-
-    #TODO: add a new method here apply_with_annotation
-    #see application_controller for semantics
     def apply(span_name=nil, &block)
-      if run?
+      if enabled?
         start(span_name)
-        yield self, current_span
+        yield self
         stop
       else
         yield
@@ -97,6 +61,38 @@ module Telemetry
       apply(span_name, &block)
     end
 
+    def bump_current_span
+      if @spans.size > 1
+        current_span_index = @spans.index(@current_span)
+        @current_span = @spans[current_span_index - 1]
+      end
+    end
+
+    def to_hash
+      return {} if !enabled?
+
+      {:id => id.to_s,
+       :tainted => @reason,
+       :time_to_instrument_trace_bits_only => @instrumentation_time,
+       :current_span_id => @current_span.id,
+       :spans => @spans.map(&:to_hash)
+      }
+    end
+
+    def apply_new_span(name=nil, &block)
+      start_new_span.apply(name) do
+        yield self
+      end
+    end
+
+    def method_missing(sym, *args, &block)
+      if [:annotate, :post_process].include?(sym)
+          return (enabled? ? @current_span.send(sym, *args, &block) : nil)
+      end
+      super
+    end
+
+    private
     def start_new_span(name=nil)
       span = Span.new({:parent_span_id => @current_span.id, 
                        :tracer => self, 
@@ -106,38 +102,26 @@ module Telemetry
       @current_span = span
     end
 
-    def bump_current_span
-      if spans.size > 1
-        current_span_index = spans.index(current_span)
-        @current_span = spans[current_span_index - 1]
+    def start(span_name=nil)
+      return if !enabled?
+      raise TraceProcessedException.new if flushed?
+      instrument do
+        @current_span.start(span_name)
+        @in_progress = true
       end
     end
 
-    def to_hash
-      return {} if !run?
-
-      {:id => id.to_s,
-       :tainted => @reason,
-       :time_to_instrument_trace_bits_only => @instrumentation_time,
-       :current_span_id => @current_span.id.to_s,
-       :spans => spans.map(&:to_hash)
-      }
-    end
-
-    def apply_new_span(name=nil, &block)
-      start_new_span.apply(name) do |span|
-        yield span
+    def stop
+      return if !enabled?
+      raise TraceProcessedException.new if flushed?
+      instrument do
+        @spans.each do |span|
+          span.stop unless span.stopped?
+        end
       end
+      flush!
     end
 
-    def method_missing(sym, *args, &block)
-      if [:annotations, :annotate, :post_process_blocks, :post_process].include?(sym)
-          return (run? ? current_span.send(sym, *args, &block) : nil)
-      end
-      super
-    end
-
-    private
     def flushed?
       !!@flushed
     end
