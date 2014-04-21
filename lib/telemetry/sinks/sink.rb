@@ -2,11 +2,16 @@ require "net/http"
 require "logger"
 
 module Telemetry
-  module Sinks
+  class MissingSinkDeviceException < Exception; end
+  class ErrorLogDeviceNotFound < Exception; end
 
+  module Sinks
     class Sink
 
-      def initialize(logfile, http_end_point, error_logger)
+      def initialize(logfile, http_endpoint, error_logger)
+        raise MissingSinkDeviceException if logfile.nil? && (http_endpoint.nil? || http_endpoint.empty?)
+        raise ErrorLogDeviceNotFound if error_logger.nil?
+
         @error_logger = error_logger
         begin
           if !logfile.nil?

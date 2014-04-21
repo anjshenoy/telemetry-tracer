@@ -15,6 +15,12 @@ module Telemetry
       expect(Config.new(opts).run?).to be_false
     end
 
+    it "switches the runner off if there is no sink device" do
+      opts = tracer_opts
+      opts.delete("logger")
+      expect(Config.new(opts).run?).to be_false
+    end
+
     it "builds other dependencies only if the runner object decides tor run" do
       expect(config.sink).not_to be_nil
       expect(config.error_logger).not_to be_nil
