@@ -8,16 +8,20 @@ module Telemetry
   module Sinks
     class Sink
 
-      def initialize(logfile, http_endpoint, error_logger)
-        raise MissingSinkDeviceException if logfile.nil? && (http_endpoint.nil? || http_endpoint.empty?)
-        raise ErrorLogDeviceNotFound if error_logger.nil?
+      def initialize(logfile, http_endpoint, error_logger, in_memory=false)
+        if !in_memory
+          raise MissingSinkDeviceException if logfile.nil? && (http_endpoint.nil? || http_endpoint.empty?)
+          raise ErrorLogDeviceNotFound if error_logger.nil?
+        end
 
         @error_logger = error_logger
         begin
-          if !logfile.nil?
+          if logfile
             @_sink = LogSink.new(logfile)
-          else
+          elsif http_endpoint
             @_sink = HTTPSink.new(http_endpoint)
+          elsif in_memory
+            @_sink = InMemorySink.new
           end
         rescue Exception => ex
           @error_logger.error ex.backtrace.join("\n")
@@ -32,6 +36,13 @@ module Telemetry
           @error_logger.error(ex.backtrace.join("\n"))
         end
       end
+
+      def method_missing(sym, *args, &block)
+        if @_sink.respond_to?(sym)
+          return @_sink.send(sym, *args, &block)
+        end
+        super
+      end
     end
 
     class LogSink
@@ -44,7 +55,6 @@ module Telemetry
       end
     end
 
-
     class HTTPSink
       def initialize(opts={})
         @http = Net::HTTP.new(opts["server"], opts["port"])
@@ -54,6 +64,28 @@ module Telemetry
         @http.post('/trace',
                    trace.to_json,
                    {'Content-Type' => 'application/json', 'Accept' => 'application/json'})
+      end
+    end
+
+    class InMemorySink
+      def initialize
+        @@traces ||= []
+      end
+
+      def process(trace)
+        @@traces << trace.to_hash
+      end
+
+      def traces
+        self.class.traces
+      end
+
+      def self.traces
+        @@traces
+      end
+
+      def self.flush!
+        @@traces = []
       end
     end
   end

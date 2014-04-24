@@ -1,5 +1,6 @@
 require "spec_helper"
 require "telemetry/config"
+require "telemetry/sinks/sink"
 
 module Telemetry
   describe Config do
@@ -36,6 +37,14 @@ module Telemetry
       expect(config.runner.run?).to be_true
       expect(config.sink).not_to be_nil
       expect(config.error_logger).not_to be_nil
+    end
+
+    it "can set up an in memory sink optionally" do
+      opts = tracer_opts
+      opts.delete("logger")
+      config = Config.new(opts.merge!({"in_memory" => true}))
+
+      expect(config.sink.traces).to eq([])
     end
   end
 end

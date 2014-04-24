@@ -24,7 +24,7 @@ module Telemetry
       if @runner.run?
         begin
           @@error_logger ||= new_error_logger(opts["error_logger"])
-          @sink = Sinks::Sink.new(opts["logger"], opts["http_endpoint"], self.error_logger)
+          @sink = Sinks::Sink.new(opts["logger"], opts["http_endpoint"], self.error_logger, opts["in_memory"])
         rescue ErrorLogDeviceNotFound
           $stderr.puts "No Error Log Device. Switching runner off"
           @runner.off!

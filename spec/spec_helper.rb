@@ -12,6 +12,13 @@ def tracer_opts
                 "out_of" => 1}}
 end
 
+def in_memory_tracer_opts
+  {"enabled" => true,
+   "in_memory" => true,
+   "error_logger" => "/tmp/tracer_errors.log",
+   "sample" => {"number_of_requests" => 1, 
+                "out_of" => 1}}
+end
 
 class Zephyr
   def perform
