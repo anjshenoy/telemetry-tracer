@@ -27,21 +27,19 @@ class DummyAssociation
   end
 end
 
-module Telemetry
-  describe SimpleForwardable do
-    let(:dummy) {Dummy.new}
+describe Dummy do
+  let(:dummy) {Dummy.new}
 
-    it "delegates a method to an associated object" do
-      dummy_association = dummy.dummy_association
-      expect(dummy.boo).to eq(dummy_association.boo)
-    end
+  it "delegates a method to an associated object" do
+    dummy_association = dummy.dummy_association
+    expect(dummy.boo).to eq(dummy_association.boo)
+  end
 
-    it "delegates a list of methods to an associated object" do
-      dummy_association = dummy.dummy_association
+  it "delegates a list of methods to an associated object" do
+    dummy_association = dummy.dummy_association
 
-      [:foo, :bar].each do |method_name|
-        expect(dummy.send(method_name)).to eq(dummy_association.send(method_name))
-      end
+    [:foo, :bar].each do |method_name|
+      expect(dummy.send(method_name)).to eq(dummy_association.send(method_name))
     end
   end
 end
