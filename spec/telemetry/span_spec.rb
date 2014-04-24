@@ -74,24 +74,23 @@ module Telemetry
       expect(span.annotations.first.params).to eq(annotation)
     end
 
-    it "ignores an annotation if the message value is empty and if the ignore_if_blank option is set" do
+    it "adds an annotation" do
       expect(span.annotations).to be_empty
 
       span.annotate("foo", "")
-      expect(span.annotations).to be_empty
-
-      span.annotate("foo", "bar")
       expect(span.annotations.size).to eq(1)
 
-      #allow if blank
-      span.annotate("eep", nil, false)
+      span.annotate("foo", "bar")
       expect(span.annotations.size).to eq(2)
+
+      span.annotate("eep", nil)
+      expect(span.annotations.size).to eq(3)
     end
 
     it "allows you to add a block of code to post process later" do
       restart_celluloid
       span = Span.new
-      expect(span.post_process_blocks).to be_empty
+      expect(span.processors).to be_empty
 
       span.post_process("foo") do 
         x = 2
@@ -99,8 +98,30 @@ module Telemetry
         x
       end
 
-      expect(span.post_process_blocks.size).to eq(1)
-      expect(span.post_process_blocks["foo"].class).to eq(Celluloid::Future)
+      expect(span.processors.size).to eq(1)
+    end
+
+    it "records the value of the process even if its nil or empty by default" do
+      restart_celluloid
+      span.apply do |sp|
+        sp.post_process("foo") do
+          ""
+        end
+      end
+
+      expect(span.annotations.size).to eq(1)
+      expected_hash = {"foo" => ""}
+      expect(span.annotations.first.params).to eq(expected_hash)
+    end
+
+    it "does not record the empty result of the post_process block if the ignore_if_blank option is set" do
+      restart_celluloid
+      span.apply do |sp|
+        span.post_process("foo", true) do
+          ""
+        end
+      end
+      expect(span.annotations).to be_empty
     end
 
     it "executes any post process blocks and stores the results as new annotations when a span is stopped" do
@@ -120,7 +141,7 @@ module Telemetry
         end
         y
       end
-      expect(span.post_process_blocks.size).to eq(2)
+      expect(span.processors.size).to eq(2)
       expect(span.annotations).to be_empty
 
       span.stop

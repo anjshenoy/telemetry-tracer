@@ -12,7 +12,6 @@ module Telemetry
 
   class Tracer
     include Helpers::IdMaker
-    include Helpers::TimeMaker
     include Helpers::Jsonifier
     include Helpers::Timer
     extend SimpleForwardable
@@ -58,6 +57,11 @@ module Telemetry
 
     def apply_with_annotation(span_name, key, value="", &block)
       annotate(key, value)
+      apply(span_name, &block)
+    end
+
+    def apply_with_annotations(span_name, annotations, &block)
+      annotations.each {|annotation| annotate(annotation.first, annotation.last) }
       apply(span_name, &block)
     end
 

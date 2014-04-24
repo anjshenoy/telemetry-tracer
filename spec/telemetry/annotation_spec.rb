@@ -3,10 +3,10 @@ require "telemetry/annotation"
 
 module Telemetry
   describe Annotation do
-    let(:a) { Annotation.new(hash) }
+    let(:a) { Annotation.new({"foo" => "bar"}) }
 
     it "stores the incoming list of key value pairs as is" do
-      expect(a.params).to eq(hash)
+      expect(a.params).to eq({"foo" => "bar"})
     end
 
     it "logs the current time" do
@@ -14,12 +14,12 @@ module Telemetry
     end
 
     it "comes with a to_hash method which lists its internals" do
-      expect(a.to_hash["foo"]).to eq(hash["foo"])
+      expect(a.to_hash["foo"]).to eq("bar")
       expect(a.to_hash[:logged_at]).not_to be_nil
     end
 
     it "logs the time to process if one is provided" do
-      a = Annotation.new(hash, 1.123)
+      a = Annotation.new({"foo" => "bar"}, 1.123)
       expect(a.time_to_process).to eq(1.123)
     end
 
@@ -31,9 +31,5 @@ module Telemetry
       expect{Annotation.new("foo")}.to raise_error(InvalidAnnotationException)
     end
 
-    private
-    def hash
-      {"foo" => "bar"}
-    end
   end
 end

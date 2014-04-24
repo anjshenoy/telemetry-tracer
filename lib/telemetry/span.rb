@@ -1,6 +1,6 @@
 require "telemetry/helper"
 require "telemetry/annotation"
-require "celluloid"
+require "telemetry/processor"
 
 module Telemetry
   SpanStoppedException = Class.new(Exception)
@@ -11,7 +11,7 @@ module Telemetry
     include Helpers::Jsonifier
 
     attr_reader :id, :parent_span_id, :tracer, :name, :annotations, 
-      :start_time, :duration, :pid, :hostname, :post_process_blocks
+      :start_time, :duration, :pid, :hostname, :processors
 
     def initialize(opts={})
       @parent_span_id = opts[:parent_span_id]
@@ -22,26 +22,21 @@ module Telemetry
       add_annotations(opts[:annotations] || {})
       @pid = Process.pid
       @hostname = Socket.gethostname
-      @post_process_blocks = {}
+      @processors = []
     end
 
     def root?
       @parent_span_id.nil?
     end
 
-    def annotate(key, message, ignore_if_blank = true)
-      if !!ignore_if_blank
-        if !message.to_s.empty?
-          add_annotation(key, message)
-        end
-      else
-        #dont ignore if blank
-        add_annotation(key, message)
-      end
+    def annotate(key, message)
+      @annotations << Annotation.new({key => message})
     end
 
-    def post_process(name, &block)
-      @post_process_blocks.merge!({name => Celluloid::Future.new(&block)})
+    #ignore if blank option means log result even if 
+    #its nil or empty by default.
+    def post_process(name, ignore_if_blank = false, &block)
+      @processors << Processor.new(name, ignore_if_blank, &block)
     end
 
     def add_annotations(annotations_hash)
@@ -99,29 +94,16 @@ module Telemetry
     end
 
     private
-    def add_annotation(key, message, time = nil)
-      @annotations << Annotation.new({key => message}, time)
-    end
-
     def run_post_process!
-      post_process_blocks.each_pair do |key, future|
-        message, instrumentation_time = execute_future(future)
-        add_annotation(key, message, instrumentation_time)
+      @annotations += processors.map(&:run).compact.map do |hash|
+        instrumentation_time = hash.delete(:instrumentation_time)
+        exception = hash.delete(:exception)
+        if exception
+          Telemetry::Config.error_logger.error("Error processing annotation for trace_id: \
+                                               #{@tracer.id}, span_id: #{self.id}" + exception)
+        end
+        Annotation.new(hash, instrumentation_time)
       end
     end
-
-    def execute_future(future)
-      old_time = time
-      begin
-        value = future.value
-      rescue Exception => ex
-        message = "Error processing annotation for trace_id: #{@tracer.id}, span_id: #{self.id}" + 
-                   ex.class.to_s + ": " + ex.message + "\n" + ex.backtrace.join("\n")
-        Telemetry::Config.error_logger.error(message)
-        value = "processing_error"
-      end
-      [value, (time - old_time)]
-    end
-
   end
 end

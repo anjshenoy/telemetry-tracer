@@ -282,6 +282,18 @@ module Telemetry
       end
     end
 
+    it "can be applied wtih multiple annotations" do
+      annotations = [["UserAgent", "Zephyr"], ["ClientSent", ""]]
+      Tracer.with_config(tracer_opts).fetch.apply_with_annotations("span1", annotations) do |tracer|
+        expect(tracer.is_a?(Tracer)).to be_true
+        current_span = tracer.to_hash[:spans].first
+
+        expect(current_span[:name]).to eq("span1")
+        expect(current_span[:annotations].first.to_hash).to include({"UserAgent" => "Zephyr"})
+        expect(current_span[:annotations].last.to_hash).to include({"ClientSent" => ""})
+      end
+    end
+
     it "applying a new span makes the current span the parent span" do
       tracer = Tracer.with_config(tracer_opts).find_or_create
       previous_span_id = tracer.to_hash[:current_span_id]
