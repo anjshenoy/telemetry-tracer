@@ -4,7 +4,12 @@ require "telemetry/tracer"
 require "socket"
 
 module Telemetry
+
   describe Span do
+    before do
+      Tracer.reset_with_config
+    end
+
     let(:tracer) { Tracer.with_config(tracer_opts).find_or_create }
     let(:span)   { Span.new({:tracer => tracer}) }
 

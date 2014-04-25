@@ -2,18 +2,7 @@ require "spec_helper"
 require "telemetry/tracer"
 
 module Telemetry
-  class Tracer
-    #reset the tracer for testing purposes
-    class << self
-      def reset_with_config
-        Tracer.instance_variable_set("@tracer", nil)
-        Tracer.instance_variable_set("@config", nil)
-      end
-    end
-  end
-
   describe Tracer do
-
     before do
       Tracer.reset_with_config
     end
@@ -251,7 +240,7 @@ module Telemetry
       expect(tracer.enabled?).to be_false
 
       tracer.apply do |trace|
-        expect(tracer.in_progress?).to be_false
+        expect(trace.in_progress?).to be_false
       end
     end
 

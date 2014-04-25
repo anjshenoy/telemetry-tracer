@@ -39,10 +39,6 @@ module Telemetry
       @processors << Processor.new(name, ignore_if_blank, &block)
     end
 
-    def add_annotations(annotations_hash)
-      annotations_hash.each {|k, v| annotate(k, v) }
-    end
-
     def stopped?
       !!@stop_time
     end
@@ -104,6 +100,10 @@ module Telemetry
         end
         Annotation.new(hash, instrumentation_time)
       end
+    end
+
+    def add_annotations(annotations_hash)
+      annotations_hash.each {|k, v| annotate(k, v) }
     end
   end
 end

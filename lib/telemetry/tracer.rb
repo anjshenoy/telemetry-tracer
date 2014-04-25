@@ -2,9 +2,7 @@ require "telemetry/span"
 require "telemetry/runner"
 require "telemetry/config"
 require "telemetry/helper"
-require "telemetry/helpers/timer"
 require "core/forwardable_ext"
-require "telemetry/instrumentation/zephyr"
 
 module Telemetry
   class TraceProcessedException < Exception; end
@@ -46,13 +44,9 @@ module Telemetry
     end
 
     def apply(span_name=nil, &block)
-      if enabled?
-        start(span_name)
-        yield self
-        stop
-      else
-        yield
-      end
+      start(span_name)
+      yield self
+      stop
     end
 
     def apply_with_annotation(span_name, key, value="", &block)
@@ -61,7 +55,7 @@ module Telemetry
     end
 
     def apply_with_annotations(span_name, annotations, &block)
-      annotations.each {|annotation| annotate(annotation.first, annotation.last) }
+      annotations.each {|annotation| annotate(*annotation) }
       apply(span_name, &block)
     end
 
@@ -75,7 +69,7 @@ module Telemetry
     def to_hash
       return {} if !enabled?
 
-      {:id => id.to_s,
+      {:id => id,
        :tainted => @reason,
        :time_to_instrument_trace_bits_only => @instrumentation_time,
        :current_span_id => @current_span.id,
