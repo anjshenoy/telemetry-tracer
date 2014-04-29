@@ -347,7 +347,13 @@ module Telemetry
     it "cannot reapply a stale trace" do
       tracer = Tracer.with_config(tracer_opts).find_or_create
       tracer.apply { 2*2 }
-      expect{tracer.apply{"foobar"}}.to raise_error(TraceProcessedException)
+
+      begin
+        tracer.apply("boo") do; end
+      rescue TraceProcessedException => ex
+        expect(ex.message).to include(tracer.id.to_s)
+        expect(ex.message).to include(tracer.current_span_id.to_s)
+      end
     end
 
     it "bumps the current span if the current span has been processed" do

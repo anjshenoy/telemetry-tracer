@@ -3,6 +3,7 @@ require "telemetry/runner"
 require "telemetry/config"
 require "telemetry/helper"
 require "core/forwardable_ext"
+require "telemetry/instrumentation/zephyr"
 
 module Telemetry
   class TraceProcessedException < Exception; end
@@ -95,6 +96,10 @@ module Telemetry
     end
 
     private
+    def trace_processed_error_string
+      "already processed trace_id:#{id}, span_id: #{current_span_id}"
+    end
+
     def start_new_span(name=nil)
       span = Span.new({:parent_span_id => @current_span.id, 
                        :tracer => self, 
@@ -106,7 +111,7 @@ module Telemetry
 
     def start(span_name=nil)
       return if !enabled?
-      raise TraceProcessedException.new if flushed?
+      raise TraceProcessedException.new(trace_processed_error_string) if flushed?
       instrument do
         @current_span.start(span_name)
         @in_progress = true
@@ -115,7 +120,7 @@ module Telemetry
 
     def stop
       return if !enabled?
-      raise TraceProcessedException.new if flushed?
+      raise TraceProcessedException.new(trace_processed_error_string) if flushed?
       instrument do
         @spans.each do |span|
           span.stop unless span.stopped?
