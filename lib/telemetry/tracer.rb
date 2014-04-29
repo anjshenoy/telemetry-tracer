@@ -77,6 +77,10 @@ module Telemetry
       }
     end
 
+    def current_span_id
+      enabled? ? @current_span.id : nil
+    end
+
     def apply_new_span(name=nil, &block)
       start_new_span.apply(name) do
         yield self
@@ -144,10 +148,6 @@ module Telemetry
     end
 
     class << self
-      def current
-        @tracer
-      end
-
       def config=(config_opts = {})
         @config ||= Telemetry::Config.new(config_opts)
       end
@@ -179,7 +179,7 @@ module Telemetry
       def with_override(flag = false)
         raise ConfigNotApplied if !config
 
-        reset if override? != flag && current && !current.in_progress?
+        reset if override? != flag && @tracer && !@tracer.in_progress?
         config.override = flag
         self
       end

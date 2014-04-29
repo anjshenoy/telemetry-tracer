@@ -56,14 +56,6 @@ module Telemetry
       expect(tracer1).to eq(tracer2)
     end
 
-    it "returns the currently existing trace" do
-      tracer = Tracer.current
-      expect(tracer).to be_nil
-
-      tracer = Tracer.find_or_create
-      expect(tracer.class).to eq(Tracer)
-    end
-
     it "initializes itself with a trace id if one is passed" do
       trace_id = "abc123"
       tracer = Tracer.with_config(tracer_opts).find_or_create({"trace_id" => trace_id, "parent_span_id" => "fubar"})
@@ -156,33 +148,23 @@ module Telemetry
       expect(Tracer.override?).to be_true
 
       tracer.apply do |trace|
-        expect(Tracer.current).to eq(tracer)
+        expect(Tracer.fetch).to eq(tracer)
 
         Tracer.override = false
         expect(Tracer.override?).to be_false
-        expect(Tracer.current).to eq(tracer)
+        expect(Tracer.fetch).to eq(tracer)
       end
     end
 
     it "resets the current trace if it isnt in progress if the override flag is switched off" do
       tracer = Tracer.with_config(tracer_opts).find_or_create
       expect(Tracer.override?).to be_true
-      expect(Tracer.current).to eq(tracer)
+      expect(Tracer.fetch).to eq(tracer)
       expect(tracer.in_progress?).to be_false
 
       Tracer.override = false
       expect(Tracer.override?).to be_false
-      expect(Tracer.current).to be_nil
-    end
-
-    it "doesn't do anything if there is no currently executing trace if the override flag is switched off" do
-      Tracer.config = tracer_opts
-      expect(Tracer.override?).to be_true
-      expect(Tracer.current).to be_nil
-
-      Tracer.override = false
-      expect(Tracer.override?).to be_false
-      expect(Tracer.current).to be_nil
+      expect(Tracer.fetch).not_to eq(tracer)
     end
 
     it "resets the current trace and returns a new one each time the override state is switched" do
@@ -205,12 +187,11 @@ module Telemetry
       Tracer.config = tracer_opts
 
       tracer1 = Tracer.fetch
-      expect(Tracer.current).to eq(tracer1)
+      expect(Tracer.fetch).to eq(tracer1)
       tracer1.apply do; end
 
-
-      tracer2 = Tracer.fetch
-      expect(Tracer.current).to eq(tracer2)
+      #automaticallly fetches a new trace now that the first one is done
+      expect(Tracer.fetch).not_to eq(tracer1)
     end
 
     it "applying a trace around a block logs the start time and duration for the current span" do
@@ -342,10 +323,10 @@ module Telemetry
     it "terminates the trace once its stopped" do
       tracer = Tracer.with_config(tracer_opts).find_or_create
       tracer.apply do
-        expect(Telemetry::Tracer.current).not_to be_nil
+        expect(Telemetry::Tracer.fetch).to be_in_progress
         2*2
       end
-      expect(Telemetry::Tracer.current).to be_nil
+      expect(Telemetry::Tracer.fetch).not_to be_in_progress
     end
 
     it "stops all spans attached to the trace that's stopped" do
@@ -486,6 +467,17 @@ module Telemetry
     it "anything that's not whitelisted for the current span results in a NoMethodError" do
       tracer = Tracer.with_config(tracer_opts).with_override(true).fetch
       expect{tracer.foo}.to raise_error(NoMethodError)
+    end
+
+    it "returns the current_span id if its enabled" do
+      tracer = Tracer.with_config(tracer_opts).with_override(true).fetch
+      expect(tracer).to be_enabled
+      expect(tracer.current_span_id).not_to be_nil
+      tracer.apply do; end
+
+      tracer = Tracer.with_config(tracer_opts).with_override(false).fetch
+      expect(tracer).not_to be_enabled
+      expect(tracer.current_span_id).to be_nil
     end
   end
 end
