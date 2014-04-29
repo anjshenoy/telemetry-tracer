@@ -11,14 +11,14 @@ module Telemetry
     end
 
     let(:tracer) { Tracer.with_config(tracer_opts).find_or_create }
-    let(:span)   { Span.new({:tracer => tracer}) }
+    let(:span)   { Span.new({:tracer_id => tracer.id}) }
 
     it "defaults to a root span if no parent_span_id is supplied" do
       expect(span.root?).to be_true
     end
 
     it "is attached to a trace" do
-      expect(span.tracer).to eq(tracer)
+      expect(span.tracer_id).to eq(tracer.id)
     end
 
     it "sets itself up with a human reable name if one is supplied" do
@@ -113,6 +113,7 @@ module Telemetry
           ""
         end
       end
+      span.run_post_process!
 
       expect(span.annotations.size).to eq(1)
       expected_hash = {"foo" => ""}
@@ -150,6 +151,7 @@ module Telemetry
       expect(span.annotations).to be_empty
 
       span.stop
+      span.run_post_process!
       expect(span.annotations.size).to eq(2)
 
       processed_hash1 = {"foo" => 2048}
@@ -170,6 +172,8 @@ module Telemetry
         x
       end
       span.stop
+      span.run_post_process!
+
       expect(span.annotations.first.time_to_process).not_to be_nil
     end
 
@@ -180,6 +184,7 @@ module Telemetry
         raise "Hello"
       end
       span.stop
+      span.run_post_process!
 
       processed_hash = {"hello" => "processing_error"}
       expect(span.annotations.first.params).to eq(processed_hash)

@@ -268,7 +268,7 @@ module Telemetry
       tracer = Tracer.with_config(tracer_opts).find_or_create
       previous_span_id = tracer.to_hash[:current_span_id]
       tracer.apply do |trace|
-        trace.apply_new_span("fubar2") do |inner_trace|
+        trace.apply("fubar2") do |inner_trace|
           new_span = tracer.to_hash[:spans].last
           expect(new_span[:name]).to eq("fubar2")
           expect(new_span[:id]).not_to eq(previous_span_id)
@@ -279,7 +279,7 @@ module Telemetry
 
     it "starting a new span automatically logs the start time of that span" do
       Tracer.with_config(tracer_opts).find_or_create.apply do |tracer|
-       tracer.apply_new_span do |trace|
+       tracer.apply do |trace|
          expect(trace.to_hash[:spans].last[:start_time]).to be > 0
        end
       end
@@ -320,30 +320,6 @@ module Telemetry
       expect(processed_annotations.first["foo"]).to eq(2048)
     end
 
-    it "terminates the trace once its stopped" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create
-      tracer.apply do
-        expect(Telemetry::Tracer.fetch).to be_in_progress
-        2*2
-      end
-      expect(Telemetry::Tracer.fetch).not_to be_in_progress
-    end
-
-    it "stops all spans attached to the trace that's stopped" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create
-      tracer.apply do |trace|
-        expect(trace.to_hash[:spans].size).to eq(1)
-        trace.apply_new_span("newspan") do |trace2|
-          expect(tracer.to_hash[:spans].size).to eq(2)
-        end
-      end
-      expect(tracer.to_hash[:spans].size).to eq(2)
-
-      tracer.to_hash[:spans].each do |span|
-        expect(span[:duration]).not_to be_nil
-      end
-    end
-
     it "cannot reapply a stale trace" do
       tracer = Tracer.with_config(tracer_opts).find_or_create
       tracer.apply { 2*2 }
@@ -356,13 +332,17 @@ module Telemetry
       end
     end
 
-    it "bumps the current span if the current span has been processed" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create
-      span1_id = tracer.to_hash[:current_span_id]
-      tracer.apply_new_span("foobar") do |tracer|
-        expect(tracer.to_hash[:current_span_id]).not_to eq(span1_id)
+    it "calling apply in the context of a currently executing span starts a newly nested span" do
+      tracer = Tracer.with_config(tracer_opts).fetch
+      tracer.apply do |trace|
+        span1_id = trace.current_span_id
+        expect(tracer.current_span_id).to eq(span1_id)
+        tracer.apply do |trace2|
+          expect(trace.current_span_id).not_to eq(span1_id)
+          expect(trace2.to_hash[:spans].last[:parent_span_id]).to eq(span1_id)
+        end
       end
-      expect(tracer.to_hash[:current_span_id]).to eq(span1_id)
+
     end
 
     it "logs the instrumnentation time only if allowed to run" do
@@ -372,44 +352,73 @@ module Telemetry
       expect(tracer.to_hash.has_key?(:time_to_instrument_trace_bits_only)).to be_false
     end
 
-    it "logs the instrumnentation time when stopped and if allowed to run" do
-      Tracer.config = tracer_opts.merge({:enabled => false})
-      tracer = Tracer.find_or_create
-
-      tracer.apply { 2*2 }
-      expect(tracer.to_hash[:time_to_instrument_trace_bits_only]).not_to be_nil
-    end
-
-    it "stops a span only if its in progress" do
+    it "only stops the currently executing span if applied around a block" do
       tracer = Tracer.with_config(tracer_opts).find_or_create
       tracer.apply do |trace|
-        trace.apply_new_span do |trace2|
-          2*2
-        end
+        trace.apply do; end
         expect(trace.to_hash[:spans].last[:duration]).to be > 0
         expect(trace.to_hash[:spans].first[:duration]).to eq("NaN")
       end
       expect(tracer.to_hash[:spans].first[:duration]).to be > 0
     end
 
-    it "can apply a new span around a given block of code" do
+    it "bumps the parent span to the current span if the currently nested span is done" do
       tracer = Tracer.with_config(tracer_opts).find_or_create
-
-      current_span_id = tracer.to_hash[:current_span_id]
-      tracer.apply_new_span do |trace|
-        new_span_id = tracer.to_hash[:current_span_id]
-        expect(new_span_id).to eq(trace.to_hash[:spans].last[:id])
-        expect(new_span_id).not_to eq(current_span_id)
+      tracer.apply do |trace|
+        parent_span_id = trace.current_span_id
+        trace.apply do |trace2|
+          expect(trace2).to eq(trace)
+          expect(trace2.current_span_id).not_to eq(parent_span_id)
+        end
+        expect(trace.current_span_id).to eq(parent_span_id)
       end
-      expect(tracer.to_hash[:spans].size).to eq(2)
+      expect(tracer.to_hash[:spans].first[:duration]).to be > 0
     end
 
-    it "can apply a new span with an optional name parameter" do
+    it "flushes the trace once all executing spans are stopped" do
+      tracer = Tracer.with_config(tracer_opts).find_or_create
+      tracer.apply do |trace|
+        trace.post_process("parent_post_process") do
+          2*2
+        end
+        tracer.apply do |trace2|
+          trace2.post_process("child_post_process") do
+            3*3
+          end
+        end
+        #child span is done
+        aggregated_annotations = tracer.to_hash[:spans].map{|span| span[:annotations]}.flatten
+        expect(aggregated_annotations).to be_empty
+      end
+
+      #parent_span is done => all spans are done. 
+      #now trace get flushed and all post_process_blocks should get executed
+      aggregated_annotations = tracer.to_hash[:spans].map{|span| span[:annotations]}.flatten
+      expect(aggregated_annotations.size).to eq(2)
+    end
+
+    it "logs the instrumentation time when stopped" do
       tracer = Tracer.with_config(tracer_opts).find_or_create
 
-      tracer.apply_new_span("foo") do |trace|
-        expect(trace.to_hash[:spans].last[:name]).to eq("foo")
+      tracer.apply { 2*2 }
+      expect(tracer.to_hash[:time_to_instrument_trace_bits_only]).to be > 0
+    end
+
+    it "is no longer in progress once all spans have stopped executing" do
+      tracer = Tracer.with_config(tracer_opts).find_or_create
+      tracer.apply do |trace|
+        expect(Tracer.fetch).to be_in_progress
+
+        tracer.apply do |trace2|
+          expect(Tracer.fetch).to be_in_progress
+        end
+
+        #child span is done
+        expect(Tracer.fetch).to be_in_progress
       end
+
+      #all spans are done
+      expect(Tracer.fetch).not_to be_in_progress
     end
 
     it "takes an optional span_name when applied around a block" do

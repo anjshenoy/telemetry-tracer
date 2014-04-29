@@ -10,13 +10,13 @@ module Telemetry
     include Helpers::TimeMaker
     include Helpers::Jsonifier
 
-    attr_reader :id, :parent_span_id, :tracer, :name, :annotations, 
+    attr_reader :id, :parent_span_id, :tracer_id, :name, :annotations, 
       :start_time, :duration, :pid, :hostname, :processors
 
     def initialize(opts={})
       @parent_span_id = opts[:parent_span_id]
       @id = generate_id
-      @tracer = opts[:tracer]
+      @tracer_id = opts[:tracer_id]
       @name = opts[:name]
       @annotations = []
       add_annotations(opts[:annotations] || {})
@@ -74,9 +74,7 @@ module Telemetry
     def stop
       raise SpanStoppedException if stopped?
       @stop_time = time
-      run_post_process!
       @in_progress = false
-      tracer.bump_current_span
     end
 
     def apply(name=nil, &block)
@@ -89,19 +87,21 @@ module Telemetry
       (stopped? ? (@stop_time - @start_time) : "NaN")
     end
 
-    private
     def run_post_process!
       @annotations += processors.map(&:run).compact.map do |hash|
         instrumentation_time = hash.delete(:instrumentation_time)
         exception = hash.delete(:exception)
         if exception
           Telemetry::Config.error_logger.error("Error processing annotation for trace_id: \
-                                               #{@tracer.id}, span_id: #{self.id}" + exception)
+                                               #{@tracer_id}, span_id: #{self.id}" + exception)
         end
         Annotation.new(hash, instrumentation_time)
       end
     end
 
+    private
+    #TODO: this doesn't provide much value 
+    #move back to contructor
     def add_annotations(annotations_hash)
       annotations_hash.each {|k, v| annotate(k, v) }
     end

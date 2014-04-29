@@ -29,7 +29,7 @@ module Telemetry
         check_dirty_bits(trace_id, parent_span_id)
         @id = trace_id || generate_id
         @current_span = Span.new({:parent_span_id => parent_span_id, 
-                                  :tracer => self,
+                                  :tracer_id => id,
                                   :name => opts["name"],
                                   :annotations => opts["annotations"]})
         @spans = [@current_span]
@@ -82,12 +82,6 @@ module Telemetry
       enabled? ? @current_span.id : nil
     end
 
-    def apply_new_span(name=nil, &block)
-      start_new_span.apply(name) do
-        yield self
-      end
-    end
-
     def method_missing(sym, *args, &block)
       if [:annotate, :post_process].include?(sym)
           return (enabled? ? @current_span.send(sym, *args, &block) : nil)
@@ -109,9 +103,12 @@ module Telemetry
       @current_span = span
     end
 
+    #if a trace has already started, apply a new span
+    #if its stopped, throw the TraceProcessedException
     def start(span_name=nil)
       return if !enabled?
       raise TraceProcessedException.new(trace_processed_error_string) if flushed?
+      start_new_span(span_name) if in_progress?
       instrument do
         @current_span.start(span_name)
         @in_progress = true
@@ -122,11 +119,10 @@ module Telemetry
       return if !enabled?
       raise TraceProcessedException.new(trace_processed_error_string) if flushed?
       instrument do
-        @spans.each do |span|
-          span.stop unless span.stopped?
-        end
+        @current_span.stop
+        bump_current_span
       end
-      flush!
+      flush! if @spans.all?(&:stopped?)
     end
 
     def flushed?
@@ -134,6 +130,9 @@ module Telemetry
     end
 
     def flush!
+      instrument do
+        @spans.each(&:run_post_process!)
+      end
       @sink.process(self)
       @flushed = true
       @in_progress = false
