@@ -50,14 +50,9 @@ module Telemetry
       stop
     end
 
-    def apply_with_annotation(span_name, key, value="", &block)
-      annotate(key, value)
-      apply(span_name, &block)
-    end
-
-    def apply_with_annotations(span_name, annotations, &block)
+    def with_annotations(annotations)
       annotations.each {|annotation| annotate(*annotation) }
-      apply(span_name, &block)
+      self
     end
 
     def bump_current_span

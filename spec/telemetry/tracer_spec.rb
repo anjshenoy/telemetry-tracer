@@ -243,24 +243,14 @@ module Telemetry
       end
     end
 
-    it "can be applied with an annotation" do
-      Tracer.with_config(tracer_opts).fetch.apply_with_annotation("span1", "key", "value") do |tracer|
-        expect(tracer.is_a?(Tracer)).to be_true
-        current_span = tracer.to_hash[:spans].first
-        expect(current_span[:name]).to eq("span1")
-        expect(current_span[:annotations].first.to_hash).to include({"key" => "value"})
-      end
-    end
-
-    it "can be applied wtih multiple annotations" do
+    it "can accept multiple annotations" do
+      tracer = Tracer.with_config(tracer_opts).fetch
       annotations = [["UserAgent", "Zephyr"], ["ClientSent", ""]]
-      Tracer.with_config(tracer_opts).fetch.apply_with_annotations("span1", annotations) do |tracer|
-        expect(tracer.is_a?(Tracer)).to be_true
-        current_span = tracer.to_hash[:spans].first
-
-        expect(current_span[:name]).to eq("span1")
-        expect(current_span[:annotations].first.to_hash).to include({"UserAgent" => "Zephyr"})
-        expect(current_span[:annotations].last.to_hash).to include({"ClientSent" => ""})
+      tracer.with_annotations(annotations).apply("span") do
+        aggregated_annotations = tracer.to_hash[:spans].first[:annotations]
+        expect(aggregated_annotations.size).to eq(2)
+        expect(aggregated_annotations.first).to include({"UserAgent" => "Zephyr"})
+        expect(aggregated_annotations.last).to include({"ClientSent" => ""})
       end
     end
 
