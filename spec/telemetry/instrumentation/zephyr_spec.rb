@@ -70,7 +70,6 @@ module Telemetry
       client = Client.new(nil, nil)
       client.get_nice
       expect(Telemetry::Sinks::InMemorySink.traces.size).to eq(1)
-      #pp Telemetry::Sinks::InMemorySink.traces
     end
 
     it "sends the trace id and the span id as headers along with the request" do
