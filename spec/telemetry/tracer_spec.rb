@@ -243,15 +243,16 @@ module Telemetry
       end
     end
 
-    it "can accept multiple annotations" do
-      tracer = Tracer.with_config(tracer_opts).fetch
+    it "can be applied with multiple annotations" do
       annotations = [["UserAgent", "Zephyr"], ["ClientSent", ""]]
-      tracer.with_annotations(annotations).apply("span") do
-        aggregated_annotations = tracer.to_hash[:spans].first[:annotations]
-        expect(aggregated_annotations.size).to eq(2)
-        expect(aggregated_annotations.first).to include({"UserAgent" => "Zephyr"})
-        expect(aggregated_annotations.last).to include({"ClientSent" => ""})
+      tracer = Tracer.with_config(tracer_opts).find_or_create
+      tracer.apply("foo", annotations) do
+        annotations = tracer.to_hash[:spans].first[:annotations]
+        expect(annotations.size).to eq(2)
+        expect(annotations.first).to include({"UserAgent" => "Zephyr"})
+        expect(annotations.last).to include({"ClientSent" => ""})
       end
+
     end
 
     it "applying a new span makes the current span the parent span" do
@@ -353,8 +354,10 @@ module Telemetry
     end
 
     it "bumps the parent span to the current span if the currently nested span is done" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create
-      tracer.apply do |trace|
+      Tracer.config = tracer_opts
+
+      #pattern 1 - parent trace => child trace
+      Tracer.fetch.apply do |trace|
         parent_span_id = trace.current_span_id
         trace.apply do |trace2|
           expect(trace2).to eq(trace)
@@ -362,7 +365,35 @@ module Telemetry
         end
         expect(trace.current_span_id).to eq(parent_span_id)
       end
-      expect(tracer.to_hash[:spans].first[:duration]).to be > 0
+
+      #pattern 2 - parent trace => [child trace1 => child trace2]
+      Tracer.fetch.apply do |trace|
+        span1_id = trace.current_span_id
+        trace.apply do |trace2|
+          span2_id = trace2.current_span_id
+          trace2.apply do |trace3|
+            span3_id = trace2.current_span_id
+            expect(trace3.current_span_id).to eq(span3_id)
+          end
+          expect(trace2.current_span_id).to eq(span2_id)
+        end
+        expect(trace.current_span_id).to eq(span1_id)
+      end
+
+      #pattern 3 - parent trace => [child trace1, child trace2]
+      Tracer.fetch.apply do |trace|
+        span1_id = trace.current_span_id
+        trace.apply do |trace2|
+          span2_id = trace2.current_span_id
+          expect(trace2.current_span_id).to eq(span2_id)
+        end
+        expect(trace.current_span_id).to eq(span1_id)
+        trace.apply do |trace3|
+          span3_id = trace3.current_span_id
+          expect(trace3.current_span_id).to eq(span3_id)
+        end
+        expect(trace.current_span_id).to eq(span1_id)
+      end
     end
 
     it "flushes the trace once all executing spans are stopped" do
@@ -418,11 +449,20 @@ module Telemetry
       end
     end
 
-    it "takes an optional span name when applied" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create
-      tracer.apply("foo") do |trace|
-      end
-      expect(tracer.to_hash[:spans].first[:name]).to eq("foo")
+    it "re-raises any exceptions raised by instrumentation code and still stops the span" do
+      Telemetry::Sinks::InMemorySink.flush!
+      tracer = Tracer.with_config(in_memory_tracer_opts).find_or_create
+      expect { tracer.apply("foo") do |trace|
+                 raise "Hello"
+                end }.to raise_error("Hello")
+
+      #trace still gets flushed
+      traces = Telemetry::Sinks::InMemorySink.traces
+      expect(traces.size).to eq(1)
+      spans = traces.first[:spans]
+
+      expect(spans.size).to eq(1)
+      expect(spans.first[:name]).to eq("foo")
     end
 
     it "annotates the current trace only if its allowed to run" do

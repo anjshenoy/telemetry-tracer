@@ -44,21 +44,15 @@ module Telemetry
       !!@in_progress
     end
 
-    def apply(span_name=nil, &block)
-      start(span_name)
-      yield self
-      stop
-    end
-
-    def with_annotations(annotations)
-      annotations.each {|annotation| annotate(*annotation) }
-      self
-    end
-
-    def bump_current_span
-      if @spans.size > 1
-        current_span_index = @spans.index(@current_span)
-        @current_span = @spans[current_span_index - 1]
+    def apply(span_name=nil, annotations=[], &block)
+      begin
+        start(span_name)
+        annotations.each {|annotation| annotate(*annotation) }
+        yield self
+      rescue Exception => ex
+        raise ex
+      ensure
+        stop
       end
     end
 
@@ -85,6 +79,11 @@ module Telemetry
     end
 
     private
+    def bump_current_span
+      @current_span = @spans.select{|s| s.in_progress?}.last
+      @current_span ||= @spans.first
+    end
+
     def trace_processed_error_string
       "already processed trace_id:#{id}, span_id: #{current_span_id}"
     end
@@ -103,7 +102,9 @@ module Telemetry
     def start(span_name=nil)
       return if !enabled?
       raise TraceProcessedException.new(trace_processed_error_string) if flushed?
-      start_new_span(span_name) if in_progress?
+      if in_progress?
+        start_new_span(span_name)
+      end
       instrument do
         @current_span.start(span_name)
         @in_progress = true
