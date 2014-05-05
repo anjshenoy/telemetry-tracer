@@ -18,6 +18,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'celluloid', '~> 0.15'
   s.add_development_dependency 'rspec', '~> 2.14'
   s.add_development_dependency 'zephyr', '~> 1.2.2'
+  s.add_development_dependency 'yam-sweatshop', '~> 1.5.3'
 
   s.require_paths = ["lib"]
 end
