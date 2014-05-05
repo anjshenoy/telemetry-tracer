@@ -16,8 +16,8 @@ class Zephyr
 
     #magic happens on this line
 
-    {"X-Telemetry-TraceId" => headers["X-Telemetry-TraceId"],
-     "X-Telemetry-SpanId"  => headers["X-Telemetry-SpanId"]}
+    {Telemetry::TRACE_HEADER_KEY => headers[Telemetry::TRACE_HEADER_KEY],
+     Telemetry::SPAN_HEADER_KEY  => headers[Telemetry::SPAN_HEADER_KEY]}
   end
 end
 
@@ -28,8 +28,8 @@ module Telemetry
     attr_reader :zep
 
     def initialize(trace_id, parent_span_id)
-      @headers = {"X-Telemetry-TraceId" => trace_id,
-                  "X-Telemetry-SpanId" => parent_span_id,
+      @headers = {Telemetry::TRACE_HEADER_KEY => trace_id,
+                  Telemetry::SPAN_HEADER_KEY => parent_span_id,
                   "Content-type" => "application/json"}
       @zep = Zephyr.new
     end
@@ -56,7 +56,9 @@ module Telemetry
       trace = Telemetry::Tracer.fetch
       trace.apply do; end
 
-      #starts a new span
+      #assume this comes from a worker 
+      #so the parent span is actually done by the time it gets here
+      #and a new span with the original parent span ID is constructed
       client = Client.new(trace.id, trace.to_hash[:current_span_id])
       client.get_nice
       traces = Telemetry::Sinks::InMemorySink.traces

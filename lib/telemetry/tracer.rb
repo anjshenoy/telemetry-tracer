@@ -30,8 +30,8 @@ module Telemetry
 
       instrument do
         @sink = self.class.config.sink
-        #TODO: this should be split into separate assignments
-        trace_id, parent_span_id = opts[TRACE_HEADER_KEY], opts[SPAN_HEADER_KEY]
+        trace_id =  opts[TRACE_HEADER_KEY]
+        parent_span_id = opts[SPAN_HEADER_KEY]
         check_dirty_bits(trace_id, parent_span_id)
         @id = trace_id || generate_id
         @current_span = Span.new({:parent_span_id => parent_span_id, 
