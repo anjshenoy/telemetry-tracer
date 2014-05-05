@@ -4,8 +4,13 @@ require "telemetry/config"
 require "telemetry/helper"
 require "core/forwardable_ext"
 require "telemetry/instrumentation/zephyr"
+require "telemetry/instrumentation/sweatshop/worker"
 
 module Telemetry
+
+  TRACE_HEADER_KEY = "X-Telemetry-TraceId"
+  SPAN_HEADER_KEY = "X-Telemetry-SpanId"
+
   class TraceProcessedException < Exception; end
   class ConfigNotApplied < Exception; end
 
@@ -25,7 +30,8 @@ module Telemetry
 
       instrument do
         @sink = self.class.config.sink
-        trace_id, parent_span_id = opts["trace_id"], opts["parent_span_id"]
+        #TODO: this should be split into separate assignments
+        trace_id, parent_span_id = opts[TRACE_HEADER_KEY], opts[SPAN_HEADER_KEY]
         check_dirty_bits(trace_id, parent_span_id)
         @id = trace_id || generate_id
         @current_span = Span.new({:parent_span_id => parent_span_id, 
@@ -76,6 +82,15 @@ module Telemetry
           return (enabled? ? @current_span.send(sym, *args, &block) : nil)
       end
       super
+    end
+
+    def headers
+      if enabled?
+        {TRACE_HEADER_KEY => id,
+         SPAN_HEADER_KEY  => current_span_id}
+      else
+        {}
+      end
     end
 
     private

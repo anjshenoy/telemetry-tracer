@@ -4,7 +4,7 @@ module Sweatshop
   class Worker
     class << self
       def enqueue_with_trace(task, *args)
-        task[:args] << Telemetry::Tracer.current_trace_headers
+        task[:args] << Telemetry::Tracer.fetch.headers
         enqueue_without_trace(task, *args)
       end
       alias_method :enqueue_without_trace, :enqueue
@@ -27,8 +27,8 @@ module Sweatshop
       def trace_headers_exist?(task)
         possible_trace_headers = task[:args][-1]
         if possible_trace_headers.is_a?(Hash) && 
-          (possible_trace_headers.has_key?(Telemetry::Tracer::TRACE_HEADER_KEY) || 
-           possible_trace_headers.has_key?(Telemetry::Tracer::SPAN_HEADER_KEY))
+          (possible_trace_headers.has_key?(Telemetry::TRACE_HEADER_KEY) || 
+           possible_trace_headers.has_key?(Telemetry::SPAN_HEADER_KEY))
           true
         else
           false

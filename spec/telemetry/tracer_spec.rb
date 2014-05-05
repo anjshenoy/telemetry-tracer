@@ -58,7 +58,8 @@ module Telemetry
 
     it "initializes itself with a trace id if one is passed" do
       trace_id = "abc123"
-      tracer = Tracer.with_config(tracer_opts).find_or_create({"trace_id" => trace_id, "parent_span_id" => "fubar"})
+      tracer = Tracer.with_config(tracer_opts).find_or_create({Telemetry::TRACE_HEADER_KEY => trace_id, 
+                                                               Telemetry::SPAN_HEADER_KEY => "fubar"})
       expect(tracer.id).to eq(trace_id)
     end
 
@@ -68,12 +69,12 @@ module Telemetry
     end
 
     it "markes itself as dirty and gives a reason if either trace_id is present but parent span id isn't" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create({"trace_id" => "fubar123"})
+      tracer = Tracer.with_config(tracer_opts).find_or_create({Telemetry::TRACE_HEADER_KEY => "fubar123"})
       expect(tracer.to_hash[:tainted]).to eq("trace_id present; parent_span_id not present.")
     end
 
     it "markes itself as dirty if trace id is not present but parent_span_id is" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create({"enabled" => true, "parent_span_id" => "fubar123"})
+      tracer = Tracer.with_config(tracer_opts).find_or_create({"enabled" => true, Telemetry::SPAN_HEADER_KEY => "fubar123"})
       expect(tracer.to_hash[:tainted]).to eq("trace_id not present; parent_span_id present. Auto generating trace id")
     end
 
@@ -83,8 +84,8 @@ module Telemetry
     end
 
     it "sets up the current span with a parent span id if one is supplied" do
-      tracer_hash = Tracer.with_config(tracer_opts).find_or_create({"trace_id" => 123456789, 
-                                                               "parent_span_id" => 456789}).to_hash
+      tracer_hash = Tracer.with_config(tracer_opts).find_or_create({Telemetry::TRACE_HEADER_KEY => 123456789, 
+                                                                    Telemetry::SPAN_HEADER_KEY => 456789}).to_hash
       expect(tracer_hash[:spans].size).to eq(1)
       expect(tracer_hash[:spans].first[:parent_span_id]).to eq(456789)
       expect(tracer_hash[:spans].first[:id]).to eq(tracer_hash[:current_span_id])
@@ -107,7 +108,8 @@ module Telemetry
       Tracer.config = tracer_opts.merge("enabled" => false)
       expect(Tracer.run?).to be_false
 
-      tracer = Tracer.find_or_create({"trace_id" => "123", "parent_span_id" => "234"})
+      tracer = Tracer.find_or_create({Telemetry::TRACE_HEADER_KEY => "123", 
+                                      Telemetry::SPAN_HEADER_KEY => "234"})
       expect(tracer.id).to be_nil
       expect(tracer.to_hash).to be_empty
     end
@@ -523,6 +525,12 @@ module Telemetry
       tracer = Tracer.with_config(tracer_opts).with_override(false).fetch
       expect(tracer).not_to be_enabled
       expect(tracer.current_span_id).to be_nil
+    end
+
+    it "fetches the headers for the current trace" do
+      tracer = Tracer.with_config(tracer_opts).with_override(true).fetch
+      expect(tracer.headers).to eq({Telemetry::TRACE_HEADER_KEY => tracer.id,
+                                    Telemetry::SPAN_HEADER_KEY => tracer.current_span_id })
     end
   end
 end
