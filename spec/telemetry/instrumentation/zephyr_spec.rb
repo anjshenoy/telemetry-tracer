@@ -45,8 +45,9 @@ module Telemetry
   end
 
   describe Client do
-    Telemetry::Tracer.config = in_memory_tracer_opts
-    after do
+    before do
+      Tracer.reset_with_config
+      Telemetry::Tracer.config = in_memory_tracer_opts
       Telemetry::Sinks::InMemorySink.flush!
     end
 
