@@ -5,19 +5,27 @@ module Telemetry
     attr_reader :sample, :sample_size
 
     def initialize(*args)
-      @enabled, sample, @host = args
+      @enabled, sample, @host, @override = args
       if enabled?
         @sample, @sample_size = sample_and_size(sample)
-        @override = true
+        @override ||= true
       end
     end
 
     def override?
-      !!@override
+      if @override == true || @override == false
+        @override
+      elsif @override.is_a?(Proc)
+        !!(@override.call)
+      else
+        #break circuit because we don't know how to 
+        #evaluate override
+        false
+      end
     end
 
     def override=(flag)
-      @override = flag
+      @override = flag if !flag.nil?
     end
 
     def enabled?

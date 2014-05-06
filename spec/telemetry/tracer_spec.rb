@@ -31,6 +31,19 @@ module Telemetry
       expect(Tracer.with_override(false).override?).to be_false
     end
 
+    it "stores a proc object as part of its config which it will evaluate and substitute for the override flag" do
+      Tracer.config = tracer_opts.merge({"override" => Proc.new{MyAppCache.tracer_enabled}})
+      expect(Tracer.override?).to be_false
+    end
+
+    it "allows a proc of code to be stored at any time which is evaluated and substituted for the override flag" do
+      Tracer.config = tracer_opts
+      expect(Tracer.override?).to be_true
+
+      Tracer.override = Proc.new{MyAppCache.tracer_enabled}
+      expect(Tracer.override?).to be_false
+    end
+
     it "has a with_config api which applies the supplied config opts and returns self" do
       expect(Tracer.with_config(tracer_opts).override?).to be_true
     end
@@ -532,5 +545,6 @@ module Telemetry
       expect(tracer.headers).to eq({Telemetry::TRACE_HEADER_KEY => tracer.id,
                                     Telemetry::SPAN_HEADER_KEY => tracer.current_span_id })
     end
+
   end
 end
