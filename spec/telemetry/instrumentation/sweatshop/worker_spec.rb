@@ -23,17 +23,29 @@ module Sweatshop
     let(:trace_headers) { {Telemetry::TRACE_HEADER_KEY => 1233467890,
                            Telemetry::SPAN_HEADER_KEY  => 12345} }
 
+    before do
+      Telemetry::Tracer.reset_with_config
+    end
+
     it "appends the trace information to the outgoing task" do
       tracer = Telemetry::Tracer.with_config(tracer_opts).fetch
       tracer.apply("span1") do |trace|
         result = TestWorker.enqueue(task)
 
-        trace_headers = result[-1]
-        expect(trace_headers).to include({Telemetry::TRACE_HEADER_KEY => tracer.id})
-        expect(trace_headers).to include({Telemetry::SPAN_HEADER_KEY => tracer.current_span_id})
+        expect(result.size).to eq(2)
+        expect(result.last).to eq({:tracer => tracer.headers})
       end
     end
 
+    it "does not append anything to the outgoing task if the tracer is not allowed to run" do
+      Telemetry::Tracer.config = tracer_opts.merge({"enabled" => false})
+      Telemetry::Tracer.fetch.apply("span1") do |trace|
+        result = TestWorker.enqueue(task)
+
+        expect(result.size).to eq(1)
+        expect(result).to eq([{:foo => 1, :bar => "abc"}])
+      end
+    end
 
     it "strips the dequeued task of the tracer bits" do
       task[:args] << trace_headers
@@ -42,8 +54,47 @@ module Sweatshop
     end
 
     it "stays idempotent if the dequeued task does not carry tracer bits" do
+      task[:args] << {:tracer => {}}
       result = TestWorker.do_task(task)
       expect(result).to eq(args)
+    end
+
+    it "strips the tracer bits coming off the queue only if they are enqueued" do
+      expect(task[:args].size).to be(1)
+
+      result = TestWorker.do_task(task)
+      expect(result).to eq([{:foo => 1, :bar => "abc"}])
+    end
+
+    it "strips the tracer bits coming off the queue only if they are enqueued and in trace format" do
+      task[:args] << nil
+      expect(task[:args].size).to be(2)
+
+      result = TestWorker.do_task(task)
+      expect(result).to eq([{:foo => 1, :bar => "abc"}, nil])
+
+      #replace nil with number
+      args[1] = "123"
+      expect(task[:args].size).to be(2)
+
+      result = TestWorker.do_task(task)
+      expect(result).to eq([{:foo => 1, :bar => "abc"}, "123"])
+
+      #last element is an empty hash - pass it downstream as it
+      #tracer hash format is {:tracer => {"X-Telemetry-TraceId" => 123, "X-Telemetry-SpanId" => 456}}
+      args[1] = {}
+      expect(task[:args].size).to be(2)
+
+      result = TestWorker.do_task(task)
+      expect(result).to eq([{:foo => 1, :bar => "abc"}, {}])
+
+      #now the incoming args' last element  in the tracer format, 
+      #strip out the tracer bits and pass the rest on
+      args[1] = {:tracer => {}}
+      expect(task[:args].size).to be(2)
+
+      result = TestWorker.do_task(task)
+      expect(result).to eq([{:foo => 1, :bar => "abc"}])
     end
 
     it "still strips the incoming dequeued task off tracer bits even if the tracer is switched off" do
@@ -51,7 +102,7 @@ module Sweatshop
       Telemetry::Tracer.config = tracer_opts.merge({"enabled" => false})
       expect(Telemetry::Tracer.run?).to be_false
 
-      task[:args] << trace_headers
+      task[:args] << {:tracer => trace_headers}
       result = TestWorker.do_task(task)
       expect(result).to eq(args)
     end
