@@ -208,12 +208,10 @@ module Telemetry
         super
       end
 
-      #TODO: rename to fetch
-      def find_or_create(opts = {})
+      def fetch(opts = {})
         self.config = {} if self.config.nil?
         @tracer ||= new(opts)
       end
-      alias_method :fetch, :find_or_create
 
       def current_trace_headers
         fetch.headers

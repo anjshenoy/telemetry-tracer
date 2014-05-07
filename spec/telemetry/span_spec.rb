@@ -10,7 +10,7 @@ module Telemetry
       Tracer.reset_with_config
     end
 
-    let(:tracer) { Tracer.with_config(tracer_opts).find_or_create }
+    let(:tracer) { Tracer.with_config(tracer_opts).fetch }
     let(:span)   { Span.new({:tracer_id => tracer.id}) }
 
     it "defaults to a root span if no parent_span_id is supplied" do

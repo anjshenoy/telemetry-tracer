@@ -65,12 +65,12 @@ module Telemetry
       expect(Tracer.with_config(tracer_opts).override?).to be_true
     end
 
-    it "preinitializes itself with a default config if not set up with one when find_or_create is called" do
-      Tracer.find_or_create
+    it "preinitializes itself with a default config if not set up with one when fetch is called" do
+      Tracer.fetch
       expect(Tracer.config.run?).to be_false
     end
 
-    it "does not reinitialize itself with a new config if one is already set when find_or_create is called" do
+    it "does not reinitialize itself with a new config if one is already set when fetch is called" do
       Tracer.config = tracer_opts
       tracer = Tracer.fetch
       expect(tracer.enabled?).to be_true
@@ -81,40 +81,40 @@ module Telemetry
     end
 
     it "creates a trace if one does not already exist" do
-      tracer1 = Tracer.find_or_create
-      tracer2 = Tracer.find_or_create
+      tracer1 = Tracer.fetch
+      tracer2 = Tracer.fetch
       expect(tracer1).to eq(tracer2)
     end
 
     it "initializes itself with a trace id if one is passed" do
       trace_id = "abc123"
-      tracer = Tracer.with_config(tracer_opts).find_or_create({Telemetry::TRACE_HEADER_KEY => trace_id, 
+      tracer = Tracer.with_config(tracer_opts).fetch({Telemetry::TRACE_HEADER_KEY => trace_id, 
                                                                Telemetry::SPAN_HEADER_KEY => "fubar"})
       expect(tracer.id).to eq(trace_id)
     end
 
     it "generates a 64bit id for itself if a trace_id is not supplied" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create
+      tracer = Tracer.with_config(tracer_opts).fetch
       expect(tracer.id.size).to eq(8)
     end
 
     it "markes itself as dirty and gives a reason if either trace_id is present but parent span id isn't" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create({Telemetry::TRACE_HEADER_KEY => "fubar123"})
+      tracer = Tracer.with_config(tracer_opts).fetch({Telemetry::TRACE_HEADER_KEY => "fubar123"})
       expect(tracer.to_hash[:tainted]).to eq("trace_id present; parent_span_id not present.")
     end
 
     it "markes itself as dirty if trace id is not present but parent_span_id is" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create({"enabled" => true, Telemetry::SPAN_HEADER_KEY => "fubar123"})
+      tracer = Tracer.with_config(tracer_opts).fetch({"enabled" => true, Telemetry::SPAN_HEADER_KEY => "fubar123"})
       expect(tracer.to_hash[:tainted]).to eq("trace_id not present; parent_span_id present. Auto generating trace id")
     end
 
     it "comes with a brand new span out of the box" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create
+      tracer = Tracer.with_config(tracer_opts).fetch
       expect(tracer.to_hash[:spans].size).to eq(1)
     end
 
     it "sets up the current span with a parent span id if one is supplied" do
-      tracer_hash = Tracer.with_config(tracer_opts).find_or_create({Telemetry::TRACE_HEADER_KEY => 123456789, 
+      tracer_hash = Tracer.with_config(tracer_opts).fetch({Telemetry::TRACE_HEADER_KEY => 123456789, 
                                                                     Telemetry::SPAN_HEADER_KEY => 456789}).to_hash
       expect(tracer_hash[:spans].size).to eq(1)
       expect(tracer_hash[:spans].first[:parent_span_id]).to eq(456789)
@@ -122,7 +122,7 @@ module Telemetry
     end
 
     it "passes any annotations to the current span" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create
+      tracer = Tracer.with_config(tracer_opts).fetch
       aggregated_annotations = tracer.to_hash[:spans].map{|span| span[:annotations]}.flatten
       expect(aggregated_annotations).to be_empty
 
@@ -138,14 +138,14 @@ module Telemetry
       Tracer.config = tracer_opts.merge("enabled" => false)
       expect(Tracer.run?).to be_false
 
-      tracer = Tracer.find_or_create({Telemetry::TRACE_HEADER_KEY => "123", 
+      tracer = Tracer.fetch({Telemetry::TRACE_HEADER_KEY => "123", 
                                       Telemetry::SPAN_HEADER_KEY => "234"})
       expect(tracer.id).to be_nil
       expect(tracer.to_hash).to be_empty
     end
 
     it "is in progress only once its started and before its stopped" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create
+      tracer = Tracer.with_config(tracer_opts).fetch
 
       expect(tracer.in_progress?).to be_false
       tracer.apply do |trace|
@@ -155,7 +155,7 @@ module Telemetry
     end
 
     it "still finishes processing if the override flag is switched off after a trace starts but before it stops" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create
+      tracer = Tracer.with_config(tracer_opts).fetch
       expect(tracer.enabled?).to be_true
 
       aggregated_annotations = tracer.to_hash[:spans].map{|span| span[:annotations]}.flatten
@@ -176,7 +176,7 @@ module Telemetry
     end
 
     it "returns the currently executing trace even if the override flag is switched off" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create
+      tracer = Tracer.with_config(tracer_opts).fetch
       expect(Tracer.override?).to be_true
 
       tracer.apply do |trace|
@@ -189,7 +189,7 @@ module Telemetry
     end
 
     it "resets the current trace if it isnt in progress if the override flag is switched off" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create
+      tracer = Tracer.with_config(tracer_opts).fetch
       expect(Tracer.override?).to be_true
       expect(Tracer.fetch).to eq(tracer)
       expect(tracer.in_progress?).to be_false
@@ -227,7 +227,7 @@ module Telemetry
     end
 
     it "applying a trace around a block logs the start time and duration for the current span" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create
+      tracer = Tracer.with_config(tracer_opts).fetch
       tracer.apply do
         expect(tracer.to_hash[:spans].first[:start_time]).to be > 0
         2*2
@@ -236,7 +236,7 @@ module Telemetry
     end
 
     it "applying a trace around a block yields the trace so annotations can be added to it" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create
+      tracer = Tracer.with_config(tracer_opts).fetch
       tracer.apply do |trace|
         aggregated_annotations = tracer.to_hash[:spans].map{|span| span[:annotations]}.flatten
         expect(aggregated_annotations).to be_empty
@@ -249,7 +249,7 @@ module Telemetry
 
     it "can be applied only if its allowed to run" do
       Tracer.config = tracer_opts.merge({"enabled" => false})
-      tracer = Tracer.find_or_create
+      tracer = Tracer.fetch
       expect(tracer.enabled?).to be_false
 
       tracer.apply do |trace|
@@ -259,7 +259,7 @@ module Telemetry
 
     it "allows the program to go through the normal flow of execution if its switched off" do
       Tracer.config = tracer_opts.merge({"enabled" => false})
-      tracer = Tracer.find_or_create
+      tracer = Tracer.fetch
 
       x = 0
       tracer.apply do |trace|
@@ -270,14 +270,14 @@ module Telemetry
     end
 
     it "yields itself if applied" do
-      Tracer.with_config(tracer_opts).find_or_create.apply do |tracer|
+      Tracer.with_config(tracer_opts).fetch.apply do |tracer|
         expect(tracer.is_a?(Tracer)).to be_true
       end
     end
 
     it "can be applied with multiple annotations" do
       annotations = [["UserAgent", "Zephyr"], ["ClientSent", ""]]
-      tracer = Tracer.with_config(tracer_opts).find_or_create
+      tracer = Tracer.with_config(tracer_opts).fetch
       tracer.apply("foo", annotations) do
         annotations = tracer.to_hash[:spans].first[:annotations]
         expect(annotations.size).to eq(2)
@@ -288,7 +288,7 @@ module Telemetry
     end
 
     it "applying a new span makes the current span the parent span" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create
+      tracer = Tracer.with_config(tracer_opts).fetch
       previous_span_id = tracer.to_hash[:current_span_id]
       tracer.apply do |trace|
         trace.apply("fubar2") do |inner_trace|
@@ -301,7 +301,7 @@ module Telemetry
     end
 
     it "starting a new span automatically logs the start time of that span" do
-      Tracer.with_config(tracer_opts).find_or_create.apply do |tracer|
+      Tracer.with_config(tracer_opts).fetch.apply do |tracer|
        tracer.apply do |trace|
          expect(trace.to_hash[:spans].last[:start_time]).to be > 0
        end
@@ -309,13 +309,13 @@ module Telemetry
     end
 
     it "assigns a name to the created span if one is given" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create({"name" => "fubar2"})
+      tracer = Tracer.with_config(tracer_opts).fetch({"name" => "fubar2"})
       expect(tracer.to_hash[:spans].first[:name]).to eq("fubar2")
     end
 
     it "evaluates post process blocks in the context of the current span" do
       restart_celluloid
-      tracer = Tracer.with_config(tracer_opts).find_or_create
+      tracer = Tracer.with_config(tracer_opts).fetch
       tracer.post_process("foo") do
         x = 2
         10.times { x = x*2 }
@@ -329,7 +329,7 @@ module Telemetry
 
     it "executes any post process blocks associated with the current span when its stopped" do
       restart_celluloid
-      tracer = Tracer.with_config(tracer_opts).find_or_create
+      tracer = Tracer.with_config(tracer_opts).fetch
       tracer.apply do |trace|
         trace.post_process("foo") do
           x = 2
@@ -344,7 +344,7 @@ module Telemetry
     end
 
     it "cannot reapply a stale trace" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create
+      tracer = Tracer.with_config(tracer_opts).fetch
       tracer.apply { 2*2 }
 
       begin
@@ -370,13 +370,13 @@ module Telemetry
 
     it "logs the instrumnentation time only if allowed to run" do
       Tracer.config = tracer_opts.merge({"enabled" => false})
-      tracer = Tracer.find_or_create
+      tracer = Tracer.fetch
       tracer.apply { 2*2 }
       expect(tracer.to_hash.has_key?(:time_to_instrument_trace_bits_only)).to be_false
     end
 
     it "only stops the currently executing span if applied around a block" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create
+      tracer = Tracer.with_config(tracer_opts).fetch
       tracer.apply do |trace|
         trace.apply do; end
         expect(trace.to_hash[:spans].last[:duration]).to be > 0
@@ -429,7 +429,7 @@ module Telemetry
     end
 
     it "flushes the trace once all executing spans are stopped" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create
+      tracer = Tracer.with_config(tracer_opts).fetch
       tracer.apply do |trace|
         trace.post_process("parent_post_process") do
           2*2
@@ -451,14 +451,14 @@ module Telemetry
     end
 
     it "logs the instrumentation time when stopped" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create
+      tracer = Tracer.with_config(tracer_opts).fetch
 
       tracer.apply { 2*2 }
       expect(tracer.to_hash[:time_to_instrument_trace_bits_only]).to be > 0
     end
 
     it "is no longer in progress once all spans have stopped executing" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create
+      tracer = Tracer.with_config(tracer_opts).fetch
       tracer.apply do |trace|
         expect(Tracer.fetch).to be_in_progress
 
@@ -475,7 +475,7 @@ module Telemetry
     end
 
     it "takes an optional span_name when applied around a block" do
-      tracer = Tracer.with_config(tracer_opts).find_or_create
+      tracer = Tracer.with_config(tracer_opts).fetch
       tracer.apply("foo") do |trace|
         expect(trace.to_hash[:spans].first[:name]).to eq("foo")
       end
@@ -483,7 +483,7 @@ module Telemetry
 
     it "re-raises any exceptions raised by instrumentation code and still stops the span" do
       Telemetry::Sinks::InMemorySink.flush!
-      tracer = Tracer.with_config(in_memory_tracer_opts).find_or_create
+      tracer = Tracer.with_config(in_memory_tracer_opts).fetch
       expect { tracer.apply("foo") do |trace|
                  raise "Hello"
                 end }.to raise_error("Hello")
