@@ -22,6 +22,7 @@ module Telemetry
 
     attr_reader :id
 
+    #TODO: opts should be hash by default
     def initialize(opts)
       @in_progress = false
       @flushed = false
@@ -191,10 +192,10 @@ module Telemetry
       #       This trace will however no longer be valid by the time the override flag 
       #       is switched back on (even if this happens instantly i.e. the next command) 
       #       as the request-response cycle will likely have completed with time to spare.
-      def with_override(flag = false)
+      def with_override(flag)
         raise ConfigNotApplied if !config
 
-        reset if override? != flag && @tracer && !@tracer.in_progress?
+        reset if config.override_different_from?(flag) && @tracer && !@tracer.in_progress?
         config.override = flag
         self
       end
@@ -207,11 +208,16 @@ module Telemetry
         super
       end
 
-      def find_or_create(opts={})
+      #TODO: rename to fetch
+      def find_or_create(opts = {})
         self.config = {} if self.config.nil?
         @tracer ||= new(opts)
       end
       alias_method :fetch, :find_or_create
+
+      def current_trace_headers
+        fetch.headers
+      end
 
       def reset
         @tracer = nil

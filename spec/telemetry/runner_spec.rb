@@ -1,20 +1,6 @@
 require "spec_helper"
 require "telemetry/runner"
 
-class MyAppCache
-  def self.tracer_enabled=(value)
-    @@value = value
-  end
-
-  def self.tracer_enabled
-    @@value
-  end
-
-  def self.reset
-    @@value = nil
-  end
-end
-
 module Telemetry
   describe Runner do
     before do
@@ -115,5 +101,12 @@ module Telemetry
       expect(runner.run?).to be_false
     end
 
+    it "checks if the current override state is different from the supplied value" do
+      runner.override = false
+      expect(runner.override_different_from?(true)).to be_true
+
+      MyAppCache.tracer_enabled = false
+      expect(runner.override_different_from?(Proc.new{ MyAppCache.tracer_enabled })).to be_false
+    end
   end
 end

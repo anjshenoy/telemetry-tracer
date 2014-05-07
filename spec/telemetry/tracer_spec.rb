@@ -5,6 +5,7 @@ module Telemetry
   describe Tracer do
     before do
       Tracer.reset_with_config
+      MyAppCache.reset
     end
 
     it "can set the config separately" do
@@ -32,8 +33,24 @@ module Telemetry
     end
 
     it "stores a proc object as part of its config which it will evaluate and substitute for the override flag" do
+      MyAppCache.tracer_enabled = false
       Tracer.config = tracer_opts.merge({"override" => Proc.new{MyAppCache.tracer_enabled}})
+
       expect(Tracer.override?).to be_false
+    end
+
+    it "the override flag can be changed to a new proc any time, if the evaluated proc is not the same as the current override" do
+      MyAppCache.tracer_enabled = false
+      Tracer.config = tracer_opts.merge({"override" => Proc.new{ MyAppCache.tracer_enabled }})
+      expect(Tracer.override?).to be_false
+
+      #no change
+      Tracer.override = Proc.new{ MyAppCache.tracer_enabled }
+      expect(Tracer.override?).to be_false
+
+      MyAppCache.tracer_enabled = true
+      Tracer.override = Proc.new{ MyAppCache.tracer_enabled }
+      expect(Tracer.override?).to be_true
     end
 
     it "allows a proc of code to be stored at any time which is evaluated and substituted for the override flag" do
@@ -542,8 +559,7 @@ module Telemetry
 
     it "fetches the headers for the current trace" do
       tracer = Tracer.with_config(tracer_opts).with_override(true).fetch
-      expect(tracer.headers).to eq({Telemetry::TRACE_HEADER_KEY => tracer.id,
-                                    Telemetry::SPAN_HEADER_KEY => tracer.current_span_id })
+      expect(Telemetry::Tracer.current_trace_headers).to eq(tracer.headers)
     end
 
   end

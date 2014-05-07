@@ -12,7 +12,7 @@ module Telemetry
 
     attr_reader :runner, :sink
 
-    delegate :run?, :override?, :override=, :to => :runner
+    delegate :run?, :override?, :override=, :override_different_from?, :to => :runner
 
     def initialize(opts={})
       reset_error_logger!
@@ -20,7 +20,7 @@ module Telemetry
       if config_file
         opts = YAML.load_file(config_file)
       end
-      @runner = Runner.new(opts["enabled"], {"sample" => opts["sample"]}, opts["run_on_hosts"])
+      @runner = Runner.new(opts["enabled"], {"sample" => opts["sample"]}, opts["run_on_hosts"], opts["override"])
       if @runner.run?
         begin
           @@error_logger ||= new_error_logger(opts["error_logger"])

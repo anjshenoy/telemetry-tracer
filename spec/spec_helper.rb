@@ -37,3 +37,18 @@ class Zephyr
   def perform
   end
 end
+
+class MyAppCache
+  def self.tracer_enabled=(value)
+    @@value = value
+  end
+
+  def self.tracer_enabled
+    @@value
+  end
+
+  def self.reset
+    @@value = nil
+  end
+end
+

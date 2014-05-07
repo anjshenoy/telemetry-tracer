@@ -24,6 +24,14 @@ module Telemetry
       end
     end
 
+    def override_different_from?(flag)
+      if flag.is_a?(Proc)
+        override? != flag.call
+      else
+        override? != flag
+      end
+    end
+
     def override=(flag)
       @override = flag if !flag.nil?
     end
