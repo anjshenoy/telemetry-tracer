@@ -34,7 +34,7 @@ module Telemetry
     it "configures everything from a yaml file if one is provided" do
       filepath = File.dirname(__FILE__) + "/config/tracer-test.yml"
       config = Config.new({:config_file => filepath})
-      expect(config.runner.run?).to be_true
+      expect(config.run?).to be_false
       expect(config.sink).not_to be_nil
       expect(config.error_logger).not_to be_nil
     end

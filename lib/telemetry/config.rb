@@ -12,7 +12,7 @@ module Telemetry
 
     attr_reader :runner, :sink
 
-    delegate :run?, :override?, :override=, :override_different_from?, :to => :runner
+    delegate :run?, :override?, :override=, :to => :runner
 
     def initialize(opts={})
       reset_error_logger!
@@ -20,11 +20,15 @@ module Telemetry
       if config_file
         opts = YAML.load_file(config_file)
       end
-      @runner = Runner.new(opts["enabled"], {"sample" => opts["sample"]}, opts["run_on_hosts"], opts["override"])
-      if @runner.run?
+      @runner = Runner.new(opts["enabled"])
+      if @runner.enabled?
         begin
           @@error_logger ||= new_error_logger(opts["error_logger"])
           @sink = Sinks::Sink.new(opts["logger"], opts["http_endpoint"], self.error_logger, opts["in_memory"])
+          @runner.attributes = {"sample"       => opts["sample"], 
+                                "host"         => opts["run_on_hosts"], 
+                                "error_logger" => @@error_logger, 
+                                "override"     => opts["override"] }
         rescue ErrorLogDeviceNotFound
           $stderr.puts "No Error Log Device. Switching runner off"
           @runner.off!

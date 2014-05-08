@@ -195,7 +195,7 @@ module Telemetry
       def with_override(flag)
         raise ConfigNotApplied if !config
 
-        reset if config.override_different_from?(flag) && @tracer && !@tracer.in_progress?
+        reset if @tracer && !@tracer.in_progress?
         config.override = flag
         self
       end

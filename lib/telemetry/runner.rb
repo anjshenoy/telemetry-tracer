@@ -2,38 +2,54 @@ require "socket"
 
 module Telemetry
   class Runner
-    attr_reader :sample, :sample_size
+    attr_reader :sample, :sample_size, :host
 
-    def initialize(*args)
-      @enabled, sample, @host, @override = args
+    def initialize(enabled)
+      @enabled = enabled
+
       if enabled?
-        @sample, @sample_size = sample_and_size(sample)
-        @override ||= true
+        @sample, @sample_size = sample_and_size
+      end
+    end
+
+    def attributes=(opts={})
+      if enabled?
+        @sample, @sample_size = sample_and_size(opts["sample"])
+        @host = opts["host"]
+        @error_logger = opts["error_logger"]
+        self.override = opts["override"]
       end
     end
 
     def override?
-      if @override == true || @override == false
-        @override
-      elsif @override.is_a?(Proc)
-        !!(@override.call)
+      return false if !enabled?
+
+      if @override.is_a?(Proc)
+        begin
+          return !!@override.call
+        rescue Exception => ex
+          log_exception(ex)
+          #don't assume override's result will be true
+          #the next time its evaluated.
+          #be conservative and trip the circuit - chances
+          #are if the cache is down, there are much worse
+          #problems in the making than the tracer running
+          #override can always be flipped back on when the
+          #cache/whatever recovers
+          return false
+        end
       else
-        #break circuit because we don't know how to 
-        #evaluate override
-        false
+        return !!@override
       end
     end
 
-    def override_different_from?(flag)
-      if flag.is_a?(Proc)
-        override? != flag.call
-      else
-        override? != flag
-      end
-    end
-
+    #if override is true or false and flag is true or false
+    # =>if override is different, change
+    # if override is a proc and flag is a proc
+    # change override period as the proc would have
+    # to get evaluated anyway.
     def override=(flag)
-      @override = flag if !flag.nil?
+      @override = flag if enabled?
     end
 
     def enabled?
@@ -44,7 +60,6 @@ module Telemetry
       if (sample_opts.nil? || sample_opts.empty?)
         [1, 1024]
       else
-        sample_opts = sample_opts["sample"]
         [sample_opts["number_of_requests"], sample_opts["out_of"]]
       end
     end
@@ -63,6 +78,13 @@ module Telemetry
 
     def off!
       @enabled = false
+    end
+
+    private
+    def log_exception(ex)
+      if @error_logger
+        @error_logger.error "Error processing override value: #{ex.message}\n #{ex.backtrace.join("\n")}"
+      end
     end
   end
 end

@@ -9,12 +9,14 @@ def tracer_opts
    "logger" => "/tmp/tracer.log",
    "error_logger" => "/tmp/tracer_errors.log",
    "sample" => {"number_of_requests" => 1, 
-                "out_of" => 1}}
+                "out_of" => 1},
+   "override" => true }
 end
 
 def in_memory_tracer_opts
   {"enabled" => true,
    "in_memory" => true,
+   "override" => true,
    "error_logger" => "/tmp/tracer_errors.log",
    "sample" => {"number_of_requests" => 1, 
                 "out_of" => 1}}
