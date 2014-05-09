@@ -47,16 +47,28 @@ module Sweatshop
       end
     end
 
-    it "strips the dequeued task of the tracer bits" do
-      task[:args] << trace_headers
+    it "strips the dequeued task off the tracer bits" do
+      task[:args] << {:tracer => trace_headers}
       result = TestWorker.do_task(task)
-      expect(result).to eq(args)
+      expect(result).to eq([{:foo => 1, :bar => "abc"}])
+    end
+
+    it "recreates a trace off the dequeued tracer bits" do
+      Telemetry::Tracer.config = in_memory_tracer_opts
+      task[:args] << {:tracer => trace_headers}
+      TestWorker.do_task(task)
+
+      traces = Telemetry::Sinks::InMemorySink.traces
+      expect(traces.size).to eq(1)
+      trace = traces.first
+      expect(trace[:id]).to eq(trace_headers[Telemetry::TRACE_HEADER_KEY])
+      expect(trace[:spans].first[:parent_span_id]).to eq(trace_headers[Telemetry::SPAN_HEADER_KEY])
     end
 
     it "stays idempotent if the dequeued task does not carry tracer bits" do
       task[:args] << {:tracer => {}}
       result = TestWorker.do_task(task)
-      expect(result).to eq(args)
+      expect(result).to eq([{:foo => 1, :bar => "abc"}])
     end
 
     it "strips the tracer bits coming off the queue only if they are enqueued" do
@@ -104,7 +116,7 @@ module Sweatshop
 
       task[:args] << {:tracer => trace_headers}
       result = TestWorker.do_task(task)
-      expect(result).to eq(args)
+      expect(result).to eq([{:foo => 1, :bar => "abc"}])
     end
   end
 end

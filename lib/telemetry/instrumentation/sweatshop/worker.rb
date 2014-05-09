@@ -13,7 +13,8 @@ module Sweatshop
       alias_method :enqueue, :enqueue_with_trace
 
       def do_task_with_trace(task)
-        Telemetry::Tracer.fetch(trace_headers(task[:args])).apply(queue_name) do
+        t_headers = trace_headers(task[:args])
+        Telemetry::Tracer.fetch(t_headers).apply(queue_name) do |trace|
           do_task_without_trace(task)
         end
       end
@@ -23,9 +24,9 @@ module Sweatshop
       def trace_headers(args)
         last_item = args[-1]
         if args.size > 1 && last_item.is_a?(Hash) && last_item.has_key?(:tracer)
-          args.delete_at(-1)
+          return args.delete_at(-1)[:tracer]
         end
-        {}
+        return {}
       end
     end
   end
