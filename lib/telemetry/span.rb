@@ -100,8 +100,6 @@ module Telemetry
     end
 
     private
-    #TODO: this doesn't provide much value 
-    #move back to contructor
     def add_annotations(annotations_hash)
       annotations_hash.each {|k, v| annotate(k, v) }
     end
