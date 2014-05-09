@@ -22,8 +22,7 @@ module Telemetry
 
     attr_reader :id
 
-    #TODO: opts should be hash by default
-    def initialize(opts)
+    def initialize(opts = {})
       @in_progress = false
       @flushed = false
       @enabled = self.class.run?
