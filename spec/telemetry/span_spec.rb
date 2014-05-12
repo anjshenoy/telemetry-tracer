@@ -92,6 +92,11 @@ module Telemetry
       expect(span.annotations.size).to eq(3)
     end
 
+    it "raises a SpanStopped exception if you try to annotate a span that has been stopped" do
+      span.apply("foo") {}
+      expect { span.annotate("foo", "bar") }.to raise_error(SpanStoppedException)
+    end
+
     it "allows you to add a block of code to post process later" do
       restart_celluloid
       span = Span.new
