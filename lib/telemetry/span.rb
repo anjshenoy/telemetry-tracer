@@ -29,6 +29,7 @@ module Telemetry
       @parent_span_id.nil?
     end
 
+    #TODO: raise Spanstopped exception if stopped
     def annotate(key, message)
       raise SpanStoppedException if stopped?
       @annotations << Annotation.new({key => message})

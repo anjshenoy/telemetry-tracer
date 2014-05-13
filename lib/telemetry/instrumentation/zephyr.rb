@@ -6,12 +6,10 @@ class Zephyr
     result = nil
     span_name = uri(path_components).to_s
     annotations = [["UserAgent", "Zephyr"], ["ClientSent", ""]]
-    puts "In zephyr got headers: #{}"
     tracer = Telemetry::Tracer.fetch(headers)
     tracer.apply(span_name, annotations) do |trace|
       begin
         headers.merge!(trace.headers)
-        puts "Sending headers over the wire... #{headers.inspect}"
         result = perform_without_trace(method, path_components, headers, expect, timeout, data)
       rescue Exception => e
         trace.annotate('ClientException', "#{e.class.to_s} #{e.message}")
