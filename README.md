@@ -27,15 +27,20 @@ test:
   << *default
 ```
 
+Initialize your tracer in your config/initializers/tracer.rb like so:
+```
+Tracer.config = YAML.load_file("#{File.dirname(__FILE__)}/../../config/tracer.yml")
+```
+
+### Applying the tracer to your applicaiton's request-response cycle:
+
 A trace can be wrapped around any block of code where it yields itself
 if enabled. If applied in your ApplicationController as an
 around_filter, it will apply a trace to a request like so:
 
 ```
   around_filter do |controller, action|
-    #controller_action becomes the name of the span
-    controller_action = params[:controller].gsub("/", ".") + "." + params[:action]
-    Telemetry::Tracer.fetch.apply(controller_action) do |trace|
+    Telemetry::Tracer.fetch.apply("NewSpanName") do |trace|
       action.call
     end
   end
@@ -48,45 +53,56 @@ The current trace can be fetched at any time like so:
   Telemetry::Tracer.fetch
 ```
 
-A trace contains one to many spans. In Dapper speak, a span is applied
-in the context of an RPC, could be the request-response call in the
-context of the current application or when a call is made to a worker or
-a remote server.
+Note: This library does not support multi-threading yet.
 
+A trace contains 1-many spans. In Dapper speak, a span is applied
+in the context of an RPC. This can be the request-response call 
+to a backend service or when a call is made to a worker.
+
+#### Annotations:
 Each span can have 0-many annotations and a human readable name.
-Annotations are stored as simple key value pairs. A span also has the
-ability to post process an annotation i.e. it can hold a block of code
-and execute it at a later point and then store the result as the value
-of an annotation. 
+Annotations are stored as simple key value pairs. To annotate the current 
+span, just call annotate on the current trace:
+```
+  current_trace = Telemetry::Tracer.fetch
+  current_trace.annotate("mykey", "my precious value")
+```
 
-For example to trace code paths to the sql you could add the following
-code to your PostgresSqlAdapter/MysqlAdapter:
+The tracer will take care of it for you.
+
+
+#### Tracer post-processing:
+
+A span also has the ability to "post process" a block of code into a value 
+for an annotation i.e. it can hold a block of code and execute it at a 
+later point and then store the result as the value of an annotation. 
 
 ```
-  def execute_with_trace(sql, name='')
-
-    Telemetry::Tracer.fetch.post_process("path_to_sql") do
-      MyCodePruningClass.new(caller, sql).to_hash
+    current_trace = Telemetry::Tracer.fetch
+    current_trace.post_process("mykey") do
+      2*2
     end
-    execute_without_trace
-  end
-  alias_method_chain :execute, :trace
-  #alias_method_chain to wrap the original execute method
-
 ```
 
-where MyCodePruningClass is a class you create that does the necessary
-pruning of the Kernel's callstack. Anything within the do-end part is
-stored as a block of code and executed only when a trace gets flushed.
+This fetchs the current trace, and adds a post_process block to the 
+currently executing span within that trace. When the tracer ends, all
+post-process blocks for all spans are executed. So the above code will
+store {"mykey" => 4} against the current_span for that trace as an 
+annotation.
 
-A span can have 0-many postprocess blocks. Post-process blocks are
-different from annotations.
+A span can have 0-many postprocess blocks.
 
 A trace can be inspected at any time during the application's lifecycle
-by calling its to_hash method. 
+by calling its to_hash method. Calling to_hash on the Tracer will not 
+execute the post-process blocks. Those are only processed when the traer
+stops. This is because we don't want to waste precious CPU cycles
+during the request-response round-trip processing code that can wait 
+until after the view at least is rendered.
 
-Flushing a trace results in the trace either being written to disk or
-sent to a back-end system (via HTTP). The options are specified in the
+
+#### What does a trace look like:
+Flushing a trace results in the trace either being written to disk (in JSON format)
+or being sent to a back-end system (via HTTP). The options are specified in the
 tracer's config. Here is an example of a flushed trace in JSON format:
 
 ```
@@ -99,7 +115,7 @@ tracer's config. Here is an example of a flushed trace in JSON format:
     "pid": 8768,
     "hostname": "ip-10-180-1-190",
     "parent_span_id": null,
-    "name": "api.v1.message.create",
+    "name": "api.v1.users.create",
     "start_time": 1398900091997211392,
     "duration": 35928576,
     "annotations":
@@ -115,38 +131,39 @@ tracer's config. Here is an example of a flushed trace in JSON format:
 }
 
 ```
+All times are in nanoseconds.
 
-The id at the top is the trace ID. The last currently executing span was 1401259917. In this case it is also the root span as 
-its parent_span_id is nil. This span has 2 annotations, one is a
-straightforward key-value pair, and a second where the value is a hash.
-This kind of value can be computed using a post-process block.
-Annotations that are post-processed will contain a time_to_process flag
-whose value will be the length of time in nanoseconds that it took to
-execute the post process block. We felt it worthwhile to log the time
-required for this kind of annotation because it is possible that certain
-code blocks could be expensive and engineers should have a way to know
-the same in devleopment and be able to correlate results in other
+The id at the top is the trace ID. The last currently executing span was 1401259917. 
+In this case it is also the root span as its parent_span_id is nil. This span has 
+2 annotations: one is a straightforward key-value pair. The second has a hash 
+representation for the value part. This kind of value is computed using a post-process 
+block. Annotations that are post-processed will contain a time_to_process flag
+whose value will be the length of time it took to execute the post process block. 
+We felt it worthwhile to log the time required for this kind of annotation because 
+it is possible that certain code blocks could be expensive and engineers should 
+have a way to know in devleopment and be able to correlate results in other
 environments.
 
-### Enabling your tracer:
+### Enabling the tracer:
 
-The tracer is enabled based on certain criteria. Think of it as a
-circuit where each flag operates as a switch:
+The tracer is enabled based on certain criteria. 
 
-The enabled flag is the base flag and is loaded at application load time: if this is off, it doesn't
-matter what value the other flags have, the Tracer is turned off. If enabled is on, then the Tracer checks other values
+The **enabled** flag is the base flag and is loaded at application load time. 
+If this is off, it doesn't matter what value the other flags have, the Tracer 
+is turned off. If enabled is on, then the Tracer checks other values.
 
 Override: This value defaults to true if enabled is set to true. It can also be
 stored as a proc object e.g. a flag retrieved from Redis/Memcache.
 
-in you config/initializers you can add:
+For example, in you config/initializers you can add:
 
 ```
 Tracer.override = Proc.new { MyAppGlobalConfig.get.tracer_enabled }
 ```
 
-In this way, if the proc evaluates to false, the tracer will turn off at
-run time without having to do an application restart.
+If the proc evaluates to false, the tracer will turn off without 
+having you to do an application restart. Switching the tracer on/off
+through enabled only will require an application restart.
 
 You can also tune your Tracer to run on a selection of hosts by
 specifying a regex like so: 
@@ -154,7 +171,7 @@ specifying a regex like so:
   run_on_hosts: "(web|worker)-01"
 ```
 
-And you can suggest what percentage of requests you want samplled like
+And you can decide what percentage of requests you want samplled like
 so:
 ```
   sample:
@@ -162,18 +179,20 @@ so:
     out_of: 1024
 ```
 
-this will sample 1 out of 1024 requests. In development you can set both
-parameters to 1 so that all requests are sampled. 
+this will randomly sample 1 out of every 1024 requests. In development
+you may want to set both number_of_requests and out_of to 1 so that all 
+requests are sampled.
 
 You may have to tweak some of all of these settings depending on your
-how many servers you have, how many requests get processed per server
-etc.
+how many servers you have, how many requests you're comfortable sampling.
 
 For logging, it is recommended that you have a collection agent sitting
 on the host machines to pick up the trace data and ship it to downstream
-systems where they can be processed via ETL jobs.
+systems where they can be processed via ETL jobs. This library does not do
+that.
 
 
+#### Dependencies:
 Currently tied to Zephyr/Sweatshop for making HTTP RPC calls, the tracer wraps
 the zephyr calls to send extra trace information in the headers namely,
 the trace id and the executing span Id like so:
