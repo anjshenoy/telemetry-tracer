@@ -7,7 +7,7 @@ A library that implements Dapper (http://research.google.com/pubs/pub36356.html)
 
 ### How to use:
 
-To use include in your *Gemfile:
+To use include in your Gemfile:
 ```
 gem "telemetry-tracer"
 ```
