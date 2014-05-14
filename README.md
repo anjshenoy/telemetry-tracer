@@ -128,6 +128,7 @@ code blocks could be expensive and engineers should have a way to know
 the same in devleopment and be able to correlate results in other
 environments.
 
+### Enabling your tracer:
 
 The tracer is enabled based on certain criteria. Think of it as a
 circuit where each flag operates as a switch:
@@ -173,6 +174,7 @@ etc.
 For logging, it is recommended that you have a collection agent sitting
 on the host machines to pick up the trace data and ship it to downstream
 systems where they can be processed via ETL jobs.
+
 
 Currently tied to Zephyr/Sweatshop for making HTTP RPC calls, the tracer wraps
 the zephyr calls to send extra trace information in the headers namely,
