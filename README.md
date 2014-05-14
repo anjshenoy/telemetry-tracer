@@ -5,9 +5,12 @@ telemetry-tracer
 
 A library that implements Dapper (http://research.google.com/pubs/pub36356.html) for Rails apps.
 
-To use include in your Gemfile:
+### How to use:
 
+To use include in your *Gemfile:
+```
 gem "telemetry-tracer"
+```
 
 Include a tracer.yml like so in your application's config folder:
 
