@@ -193,7 +193,7 @@ that.
 
 
 #### Dependencies:
-Currently tied to Zephyr/Sweatshop for making HTTP RPC calls, the tracer wraps
+Currently tied to **Zephyr**  and **Sweatshop** for making RPC calls, the tracer wraps
 the zephyr calls to send extra trace information in the headers namely,
 the trace id and the executing span Id like so:
 ```
