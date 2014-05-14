@@ -134,11 +134,9 @@ The tracer is enabled based on certain criteria. Think of it as a
 circuit where each flag operates as a switch:
 
 The enabled flag is the base flag and is loaded at application load time: if this is off, it doesn't
-matter what value the other flags have, the Tracer is turned off.
+matter what value the other flags have, the Tracer is turned off. If enabled is on, then the Tracer checks other values
 
-If enabled is on, then the Tracer checks other values:
-
-override: This value defaults to true if enabled is set to true. It can also be
+Override: This value defaults to true if enabled is set to true. It can also be
 stored as a proc object e.g. a flag retrieved from Redis/Memcache.
 
 in you config/initializers you can add:
