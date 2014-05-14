@@ -98,7 +98,7 @@ tracer's config. Here is an example of a flushed trace in JSON format:
   [{"id": 1401259917,
     "pid": 8768,
     "hostname": "ip-10-180-1-190",
-    "parent_span_id": nil,
+    "parent_span_id": null,
     "name": "api.v1.message.create",
     "start_time": 1398900091997211392,
     "duration": 35928576,
