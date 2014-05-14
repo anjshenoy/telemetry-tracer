@@ -87,29 +87,29 @@ by calling its to_hash method.
 
 Flushing a trace results in the trace either being written to disk or
 sent to a back-end system (via HTTP). The options are specified in the
-tracer's config. Here is an example of a flushed trace:
+tracer's config. Here is an example of a flushed trace in JSON format:
 
 ```
-{"id" => 2325977246686903339,
- "tainted" => nil,
- "time_to_instrument_trace_bits_only" => 506624,
+{"id": 2325977246686903339,
+ "tainted": nil,
+ "time_to_instrument_trace_bits_only": 506624,
  "current_span_id" => 1401259917,
- "spans" => 
-  [{"id" => 1401259917,
-    "pid" => 8768,
-    "hostname" => "ip-10-180-1-190",
-    "parent_span_id" => nil,
-    "name" => "api.v1.message.create",
-    "start_time" => 1398900091997211392,
-    "duration" => 35928576,
-    "annotations" => 
-     [{"key1" => "value1",
-       "logged_at" => 1398900091997236736},
-      {"key2" => 
-        {"sql" => "SELECT * FROM messages WHERE (id IN (17))",
-         "path_to_sql" => "app/model/foo.rb:method_a, app/workers/worker_foo.rb:method_b"},
-       "logged_at" => 1398900092033549824,
-       "time_to_process" => 14848}
+ "spans": 
+  [{"id": 1401259917,
+    "pid": 8768,
+    "hostname": "ip-10-180-1-190",
+    "parent_span_id": nil,
+    "name": "api.v1.message.create",
+    "start_time": 1398900091997211392,
+    "duration": 35928576,
+    "annotations":
+     [{"key1": "value1",
+       "logged_at": 1398900091997236736},
+      {"key2": 
+        {"sql": "SELECT * FROM messages WHERE (id IN (17))",
+         "path_to_sql": "app/model/foo.rb:method_a, app/workers/worker_foo.rb:method_b"},
+       "logged_at": 1398900092033549824,
+       "time_to_process": 14848}
       ]
     }]
 }
