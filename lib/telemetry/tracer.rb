@@ -77,11 +77,14 @@ module Telemetry
       enabled? ? @current_span.id : nil
     end
 
-    def method_missing(sym, *args, &block)
-      if [:annotate, :post_process].include?(sym)
-          return (enabled? ? @current_span.send(sym, *args, &block) : nil)
-      end
-      super
+    def annotate(*args)
+      return nil if !enabled?
+      @current_span.annotate(*args)
+    end
+
+    def post_process(*args, &block)
+      return nil if !enabled?
+      @current_span.post_process(*args, &block)
     end
 
     def headers
