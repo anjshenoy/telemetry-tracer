@@ -57,12 +57,14 @@ Note: This library does not support multi-threading yet.
 
 A trace contains one or more spans. In Dapper speak, a span is applied
 in the context of an RPC. This can be the request-response call 
-to a backend service or when a call is made to a worker.
+to a backend service or when a call is made to a worker. A running trace
+has a handle on the currently executing span at any given time.
 
 #### Annotations:
 Each span can have zero or more annotations and a human readable name.
-Annotations are stored as simple key value pairs. To annotate the current 
-span, just call annotate on the current trace:
+Annotations are stored as simple key value pairs. Since a running trace 
+always has a handle to the currently executing span, to annotate the 
+current span just call annotate on the current trace:
 ```
   current_trace = Telemetry::Tracer.fetch
   current_trace.annotate("mykey", "my precious value")
@@ -70,12 +72,13 @@ span, just call annotate on the current trace:
 
 The tracer will take care of it for you.
 
-
 #### Tracer post-processing:
 
 A span also has the ability to "post process" a block of code into a value 
 for an annotation i.e. it can hold a block of code and execute it at a 
-later point and then store the result as the value of an annotation. 
+later point and then store the result as the value of an annotation. Again, 
+to add a post_process block to the current span, call post_process on the 
+current_trace.
 
 ```
     current_trace = Telemetry::Tracer.fetch
@@ -86,18 +89,19 @@ later point and then store the result as the value of an annotation.
 
 This fetches the current trace, and adds a post_process block to the 
 currently executing span within that trace. When the tracer ends, all
-post-process blocks for all spans are executed. So the above code will
-store {"mykey" => 4} against the current_span for that trace as an 
-annotation.
+post-process blocks for all spans are executed and saved as annotations. 
+So the above code will store {"mykey" => 4} against the current_span 
+for that trace as an annotation.
 
 A span can have zero or more postprocess blocks.
 
 A trace can be inspected at any time during the application's lifecycle
-by calling its to_hash method. Calling to_hash on the Tracer will not 
-execute the post-process blocks. Those are only processed when the tracer
-stops. This is because we don't want to waste precious CPU cycles
-during the request-response round-trip processing code that can wait 
-until after the view at least is rendered.
+by calling its to_hash method. Calling to_hash on the Tracer will **not** 
+execute the post-process blocks. Post process blocks are only processed 
+when the tracer stops (which is when the RPC ends). This is because we 
+don't want to waste precious CPU cycles during the request-response 
+round-trip processing code that can wait until after the view at least 
+is rendered.
 
 
 #### What does a trace look like:
