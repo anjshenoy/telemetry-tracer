@@ -21,7 +21,7 @@ development: &default
     number_of_requests: 1
     out_of: 1
   run_on_hosts: "(web|worker)-01"
-  logger: <path-to-your-app/log/tracer.log
+  logger: <path-to-your-app>/log/tracer.log
   error_logger: <path-to-your-app>/tracer_exceptions.log
 test: 
   << *default
@@ -32,7 +32,7 @@ Initialize your tracer in your config/initializers/tracer.rb like so:
 Tracer.config = YAML.load_file("#{File.dirname(__FILE__)}/../../config/tracer.yml")
 ```
 
-### Applying the tracer to your applicaiton's request-response cycle:
+### Applying the tracer to your application's request-response cycle:
 
 A trace can be wrapped around any block of code where it yields itself
 if enabled. If applied in your ApplicationController as an
@@ -50,17 +50,17 @@ around_filter, it will apply a trace to a request like so:
 The current trace can be fetched at any time like so:
 
 ```
-  Telemetry::Tracer.fetch
+  current_trace = Telemetry::Tracer.fetch
 ```
 
 Note: This library does not support multi-threading yet.
 
-A trace contains 1-many spans. In Dapper speak, a span is applied
+A trace contains one or more spans. In Dapper speak, a span is applied
 in the context of an RPC. This can be the request-response call 
 to a backend service or when a call is made to a worker.
 
 #### Annotations:
-Each span can have 0-many annotations and a human readable name.
+Each span can have zero or more annotations and a human readable name.
 Annotations are stored as simple key value pairs. To annotate the current 
 span, just call annotate on the current trace:
 ```
@@ -84,17 +84,17 @@ later point and then store the result as the value of an annotation.
     end
 ```
 
-This fetchs the current trace, and adds a post_process block to the 
+This fetches the current trace, and adds a post_process block to the 
 currently executing span within that trace. When the tracer ends, all
 post-process blocks for all spans are executed. So the above code will
 store {"mykey" => 4} against the current_span for that trace as an 
 annotation.
 
-A span can have 0-many postprocess blocks.
+A span can have zero or more postprocess blocks.
 
 A trace can be inspected at any time during the application's lifecycle
 by calling its to_hash method. Calling to_hash on the Tracer will not 
-execute the post-process blocks. Those are only processed when the traer
+execute the post-process blocks. Those are only processed when the tracer
 stops. This is because we don't want to waste precious CPU cycles
 during the request-response round-trip processing code that can wait 
 until after the view at least is rendered.
@@ -150,7 +150,8 @@ The tracer is enabled based on certain criteria.
 
 The **enabled** flag is the base flag and is loaded at application load time. 
 If this is off, it doesn't matter what value the other flags have, the Tracer 
-is turned off. If enabled is on, then the Tracer checks other values.
+is turned off. If enabled is on, then the Tracer checks other values. Switching 
+the tracer on/off through the enabled flag will require an application restart.
 
 **Override**: This value defaults to true if enabled is set to true. It can also be
 stored as a proc object e.g. a flag retrieved from Redis/Memcache.
@@ -162,8 +163,7 @@ Tracer.override = Proc.new { MyAppGlobalConfig.get.tracer_enabled }
 ```
 
 If the proc evaluates to false, the tracer will turn off without 
-having you to do an application restart. Switching the tracer on/off
-through enabled only will require an application restart.
+needing an application restart.
 
 You can also tune your Tracer to run on a selection of hosts by
 specifying a regex like so: 
@@ -171,7 +171,7 @@ specifying a regex like so:
   run_on_hosts: "(web|worker)-01"
 ```
 
-And you can decide what percentage of requests you want samplled like
+And you can decide what percentage of requests you want sampled like
 so:
 ```
   sample:
@@ -183,7 +183,7 @@ this will randomly sample 1 out of every 1024 requests. In development
 you may want to set both number_of_requests and out_of to 1 so that all 
 requests are sampled.
 
-You may have to tweak some of all of these settings depending on your
+You may have to tweak some or all of these settings depending on your
 how many servers you have, how many requests you're comfortable sampling.
 
 For logging, it is recommended that you have a collection agent sitting
