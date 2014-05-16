@@ -3,3 +3,4 @@ tags
 .rsync-filter
 *.guardfile
 Gemfile.lock
+coverage

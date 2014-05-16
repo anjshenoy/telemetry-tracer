@@ -1,3 +1,6 @@
+require "simplecov"
+SimpleCov.start
+
 def restart_celluloid
   Celluloid.shutdown
   Celluloid.boot
