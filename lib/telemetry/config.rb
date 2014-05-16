@@ -25,7 +25,7 @@ module Telemetry
         begin
           @@error_logger ||= new_error_logger(opts["error_logger"])
           @sink = Sinks::Sink.new(opts["logger"], opts["http_endpoint"], self.error_logger, opts["in_memory"])
-          @runner.attributes = {"sample"       => opts["sample"], 
+          @runner.attributes = {"sample_ratio" => opts["sample_ratio"], 
                                 "host"         => opts["run_on_hosts"], 
                                 "error_logger" => @@error_logger, 
                                 "override"     => opts["override"] }

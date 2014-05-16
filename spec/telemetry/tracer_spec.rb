@@ -17,7 +17,7 @@ module Telemetry
       Tracer.config = tracer_opts
       expect(Tracer.config.runner.run?).to be_true
 
-      Tracer.config = {:enabled => false}
+      Tracer.config = {"enabled" => false}
       expect(Tracer.config.runner.run?).to be_true
     end
 

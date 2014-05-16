@@ -8,8 +8,7 @@ def tracer_opts
   {"enabled" => true,
    "logger" => "/tmp/tracer.log",
    "error_logger" => "/tmp/tracer_errors.log",
-   "sample" => {"number_of_requests" => 1, 
-                "out_of" => 1},
+   "sample_ratio" => 100,
    "override" => true }
 end
 
@@ -18,8 +17,7 @@ def in_memory_tracer_opts
    "in_memory" => true,
    "override" => true,
    "error_logger" => "/tmp/tracer_errors.log",
-   "sample" => {"number_of_requests" => 1, 
-                "out_of" => 1}}
+   "sample_ratio" => 100}
 end
 
 module Telemetry

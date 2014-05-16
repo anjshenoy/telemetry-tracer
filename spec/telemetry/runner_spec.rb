@@ -7,7 +7,7 @@ module Telemetry
       MyAppCache.reset
     end
 
-    let(:opts)   { {"sample" => {"number_of_requests" => 1, "out_of" => 1}} }
+    let(:opts)   { {"sample_ratio" => 100 } }
     let(:runner) { Runner.new(true) }
 
     it "has an enabled flag" do
@@ -18,8 +18,8 @@ module Telemetry
     it "can update its attributes" do
       runner.attributes = opts
 
-      expect(runner.sample).to eq(1)
-      expect(runner.sample_size).to eq(1)
+      expect(runner.sample).to eq(100)
+      expect(runner.sample_size).to eq(100)
     end
 
     it "has a sample flag" do
@@ -35,15 +35,15 @@ module Telemetry
       expect(runner.matching_host?).to be_false
     end
 
-    it "accepts a sampling rate out of a default of thousand" do
-      runner.attributes = {"sample" => {"number_of_requests" => 2, "out_of" => 1024}}
+    it "accepts a sampling rate out of a default of hundred" do
+      runner.attributes = {"sample_ratio" => 2.0}
       expect(runner.sample).to eq(2)
-      expect(runner.sample_size).to be(1024)
+      expect(runner.sample_size).to be(100)
     end
 
-    it "sets a default sampling rate of 1 out of every 1024 requests if enabled" do
+    it "sets a default sampling rate of 1 out of every 100 requests if enabled" do
       expect(runner.sample).to eq(1)
-      expect(runner.sample_size).to be(1024)
+      expect(runner.sample_size).to be(100)
     end
 
     it "does not set up any sampling parameters if disabled" do
@@ -53,9 +53,15 @@ module Telemetry
       expect(runner.sample_size).to be_nil
     end
 
+    it "turns itself off if its unable to parse the provided sampling rate" do
+      expect(runner.enabled?).to be_true
+      runner.attributes = { "sample_ratio" => "foo" }
+      expect(runner.enabled?).to be_false
+    end
+
     it "if a host regex is supplied, it runs it only on the hosts in question" do
       runner = Runner.new(true)
-      runner.attributes = {"sample" => {}, "host" => "fubar-[1-3]"}
+      runner.attributes = {"host" => "fubar-[1-3]"}
       expect(runner.matching_host?).to be_false
     end
 
