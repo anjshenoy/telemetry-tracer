@@ -15,7 +15,6 @@ module Telemetry
         end
 
         @error_logger = error_logger
-        begin
           if logfile
             @_sink = LogSink.new(logfile)
           elsif http_endpoint
@@ -23,9 +22,6 @@ module Telemetry
           elsif in_memory
             @_sink = InMemorySink.new
           end
-        rescue Exception => ex
-          @error_logger.error ex.backtrace.join("\n")
-        end
       end
 
       def process(trace)

@@ -2,7 +2,7 @@ enabled: true
 sample:
   number_of_requests: 1
   out_of: 1
-error_logger: "/tmp/tracer_exceptions.log"
-logger: "/tmp/tracer.log"
+error_logger: /tmp/tracer_exceptions.log
+logger: /tmp/tracer.log
 annotations:
   service: MySplendidServiceName

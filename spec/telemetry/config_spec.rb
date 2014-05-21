@@ -1,6 +1,7 @@
 require "spec_helper"
 require "telemetry/config"
 require "telemetry/sinks/sink"
+require "pp"
 
 module Telemetry
   describe Config do
@@ -46,5 +47,16 @@ module Telemetry
 
       expect(config.sink.traces).to eq([])
     end
+
+    it "switches itself off if it cant create the error log file" do
+      config = Config.new(tracer_opts.merge!({"error_logger" => "/dirnotexist/somelog.log"}))
+      expect(config.runner.run?).to be_false
+    end
+
+    it "switches itself off if it cant create the log file" do
+      config = Config.new(tracer_opts.merge!({"logger" => "/dirnotexist/somelog.log"}))
+      expect(config.runner.run?).to be_false
+    end
+
   end
 end

@@ -32,6 +32,9 @@ module Telemetry
         rescue ErrorLogDeviceNotFound
           $stderr.puts "No Error Log Device. Switching runner off"
           @runner.off!
+        rescue Errno::ENOENT
+          $stderr.puts "Unable to create error logger at #{opts["error_logger"]} or log sink at #{opts["logger"]}. Switching runner off"
+          @runner.off!
         rescue MissingSinkDeviceException
           $stderr.puts "No sink information supplied. \n" + 
           "You need a log file or a HTTP end point for your trace information to be written/sent somewhere\n" +
