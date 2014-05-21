@@ -1,7 +1,6 @@
 enabled: true
-sample:
-  number_of_requests: 1
-  out_of: 1
+sample_ratio: 100
+run_on_hosts: 10.11.12
 error_logger: /tmp/tracer_exceptions.log
 logger: /tmp/tracer.log
 annotations:
