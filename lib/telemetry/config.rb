@@ -12,7 +12,7 @@ module Telemetry
 
     attr_reader :runner, :sink
 
-    delegate :run?, :override?, :override=, :to => :runner
+    delegate :run?, :run_basic?, :override?, :override=, :to => :runner
 
     def initialize(opts={})
       reset_error_logger!

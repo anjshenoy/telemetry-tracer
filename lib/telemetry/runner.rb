@@ -71,7 +71,11 @@ module Telemetry
     end
 
     def run?
-      enabled? && override? && matching_host? && sample?
+      run_basic? && matching_host? && sample?
+    end
+
+    def run_basic?
+      enabled? && override?
     end
 
     def off!

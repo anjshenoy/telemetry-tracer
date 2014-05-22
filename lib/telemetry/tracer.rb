@@ -25,7 +25,7 @@ module Telemetry
     def initialize(opts = {})
       @in_progress = false
       @flushed = false
-      @enabled = self.class.run?
+      @enabled = (opts["run_basic_mode"] == true) ? self.class.run_basic? : self.class.run?
       return if !enabled?
 
       instrument do
@@ -213,6 +213,10 @@ module Telemetry
       def fetch(opts = {})
         self.config = {} if self.config.nil?
         @tracer ||= new(opts)
+      end
+
+      def fetch_with_run_basic_mode(opts = {})
+        fetch(opts.merge!({"run_basic_mode" => true}))
       end
 
       def current_trace_headers

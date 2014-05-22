@@ -80,6 +80,38 @@ module Telemetry
       expect(tracer2.enabled?).to be_true
     end
 
+    # Consider the case for workers: 
+    # If you have a cluster of workers eating off a queue, you don't 
+    # know which one will process your message.
+    # So you only want to fetch the trace based on the 
+    # run and override flags.
+    it "can elect to run in basic mode only" do
+      Tracer.config = tracer_opts.merge!({"run_on_hosts" => "someotherhost"})
+      expect(Tracer.run?).to be_false #because hosts dont match
+      expect(Tracer.run_basic?).to be_true
+
+      tracer = Tracer.fetch_with_run_basic_mode
+      expect(tracer.enabled?).to be_true
+    end
+
+    it "behaves the same as the fetch method if the enable flag is off" do
+      Tracer.config = tracer_opts.merge!({"enabled" => false})
+      expect(Tracer.run?).to be_false #because hosts dont match
+      expect(Tracer.run_basic?).to be_false
+
+      tracer = Tracer.fetch_with_run_basic_mode
+      expect(tracer.enabled?).to be_false
+    end
+
+    it "behaves the same as the fetch method if the override flag is off" do
+      Tracer.config = tracer_opts.merge!({"override" => false})
+      expect(Tracer.run?).to be_false #because hosts dont match
+      expect(Tracer.run_basic?).to be_false
+
+      tracer = Tracer.fetch_with_run_basic_mode
+      expect(tracer.enabled?).to be_false
+    end
+
     it "creates a trace if one does not already exist" do
       tracer1 = Tracer.fetch
       tracer2 = Tracer.fetch
