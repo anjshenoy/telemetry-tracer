@@ -14,7 +14,7 @@ module Sweatshop
 
       def do_task_with_trace(task)
         t_headers = trace_headers(task[:args])
-        Telemetry::Tracer.fetch(t_headers).apply(queue_name) do |trace|
+        Telemetry::Tracer.fetch_with_run_basic_mode(t_headers).apply(queue_name) do |trace|
           do_task_without_trace(task)
         end
       end
