@@ -11,14 +11,14 @@ module Telemetry
     end
 
     let(:tracer) { Tracer.with_config(tracer_opts).fetch }
-    let(:span)   { Span.new({:tracer_id => tracer.id}) }
+    let(:span)   { Span.new({:trace_id => tracer.id}) }
 
     it "defaults to a root span if no parent_span_id is supplied" do
       expect(span.root?).to be_true
     end
 
     it "is attached to a trace" do
-      expect(span.tracer_id).to eq(tracer.id)
+      expect(span.trace_id).to eq(tracer.id)
     end
 
     it "sets itself up with a human reable name if one is supplied" do

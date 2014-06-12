@@ -8,15 +8,14 @@ module Telemetry
   class Span
     include Helpers::IdMaker
     include Helpers::TimeMaker
-    include Helpers::Jsonifier
 
-    attr_reader :id, :parent_span_id, :tracer_id, :name, :annotations, 
+    attr_reader :id, :parent_span_id, :trace_id, :name, :annotations, 
       :start_time, :duration, :pid, :hostname, :processors
 
     def initialize(opts={})
       @parent_span_id = opts[:parent_span_id]
       @id = generate_id
-      @tracer_id = opts[:tracer_id]
+      @trace_id = opts[:trace_id]
       @name = opts[:name]
       @annotations = []
       add_annotations(opts[:annotations] || {})
@@ -45,7 +44,8 @@ module Telemetry
     end
 
     def to_hash
-      {:id => id,
+      {:span_id => id,
+       :trace_id => trace_id,
        :pid => pid,
        :hostname => hostname,
        :parent_span_id => parent_span_id,
@@ -93,7 +93,7 @@ module Telemetry
         instrumentation_time = hash.delete(:instrumentation_time)
         exception = hash.delete(:exception)
         if exception
-          Telemetry::Config.error_logger.error("Error processing annotation for trace_id: #{@tracer_id}, span_id: #{self.id}" + exception)
+          Telemetry::Config.error_logger.error("Error processing annotation for trace_id: #{@trace_id}, span_id: #{self.id}" + exception)
         end
         Annotation.new(hash, instrumentation_time)
       end

@@ -150,7 +150,7 @@ module Telemetry
                                                                     Telemetry::SPAN_HEADER_KEY => 456789}).to_hash
       expect(tracer_hash[:spans].size).to eq(1)
       expect(tracer_hash[:spans].first[:parent_span_id]).to eq(456789)
-      expect(tracer_hash[:spans].first[:id]).to eq(tracer_hash[:current_span_id])
+      expect(tracer_hash[:spans].first[:span_id]).to eq(tracer_hash[:current_span_id])
     end
 
     it "passes any annotations to the current span" do

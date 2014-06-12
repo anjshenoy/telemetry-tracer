@@ -66,7 +66,7 @@ module Telemetry
       expect(traces.size).to eq(2)
       expect(traces.first).to eq(trace.to_hash)
 
-      expect(traces.last[:spans].first[:parent_span_id]).to eq(trace.to_hash[:spans].first[:id])
+      expect(traces.last[:spans].first[:parent_span_id]).to eq(trace.to_hash[:spans].first[:span_id])
     end
 
     it "constructs a new trace/span if there is is no trace information in the headers" do
@@ -80,7 +80,7 @@ module Telemetry
       headers = client.get_nice
       trace = Telemetry::Sinks::InMemorySink.traces.first
       trace_id = trace[:id]
-      span_id = trace[:spans].first[:id]
+      span_id = trace[:spans].first[:span_id]
 
       expect(headers["X-Telemetry-TraceId"]).to eq(trace_id)
       expect(headers["X-Telemetry-SpanId"]).to eq(span_id)
