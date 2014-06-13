@@ -56,17 +56,18 @@ module Telemetry
     it "contructs a new span from the parent span around the perform method where the parent span specs arrive in the headers" do
       trace = Telemetry::Tracer.fetch
       trace.apply do; end
+      first_span = trace.spans.first
 
       #assume this comes from a worker 
       #so the parent span is actually done by the time it gets here
       #and a new span with the original parent span ID is constructed
-      client = Client.new(trace.id, trace.to_hash[:current_span_id])
+      client = Client.new(trace.id, trace.current_span_id)
       client.get_nice
-      traces = Telemetry::Sinks::InMemorySink.traces
-      expect(traces.size).to eq(2)
-      expect(traces.first).to eq(trace.to_hash)
+      spans = Telemetry::Sinks::InMemorySink.traces
+      expect(spans.size).to eq(2)
+      expect(spans.first).to eq(first_span)
 
-      expect(traces.last[:spans].first[:parent_span_id]).to eq(trace.to_hash[:spans].first[:span_id])
+      expect(spans.last[:parent_span_id]).to eq(first_span[:span_id])
     end
 
     it "constructs a new trace/span if there is is no trace information in the headers" do
@@ -78,19 +79,17 @@ module Telemetry
     it "sends the trace id and the span id as headers along with the request" do
       client = Client.new(nil, nil)
       headers = client.get_nice
-      trace = Telemetry::Sinks::InMemorySink.traces.first
-      trace_id = trace[:id]
-      span_id = trace[:spans].first[:span_id]
+      first_span = Telemetry::Sinks::InMemorySink.traces.first
 
-      expect(headers["X-Telemetry-TraceId"]).to eq(trace_id)
-      expect(headers["X-Telemetry-SpanId"]).to eq(span_id)
+      expect(headers["X-Telemetry-TraceId"]).to eq(first_span[:trace_id])
+      expect(headers["X-Telemetry-SpanId"]).to eq(first_span[:span_id])
     end
 
     it "logs UserAgent and ClientSent annotations before the request is sent" do
       client = Client.new(nil, nil)
       client.get_nice
-      trace = Telemetry::Sinks::InMemorySink.traces.first
-      annotations = trace[:spans].first[:annotations]
+      span = Telemetry::Sinks::InMemorySink.traces.first
+      annotations = span[:annotations]
       useragent_annotation_time = annotations[0][:logged_at]
       clientsent_annotation_time = annotations[1][:logged_at]
 
@@ -103,8 +102,8 @@ module Telemetry
     it "logs the Client Received annotation when it receives a response" do
       client = Client.new(nil, nil)
       client.get_nice
-      trace = Telemetry::Sinks::InMemorySink.traces.first
-      annotations = trace[:spans].first[:annotations]
+      span = Telemetry::Sinks::InMemorySink.traces.first
+      annotations = span[:annotations]
       clientreceived_annotation_time = annotations.last[:logged_at]
 
       time_of_request = client.zep.time_of_request
@@ -117,8 +116,8 @@ module Telemetry
       begin
         client.get_with_exception
       rescue TestException
-        trace = Telemetry::Sinks::InMemorySink.traces.first
-        client_exception_annotation = trace[:spans].first[:annotations][2]
+        span = Telemetry::Sinks::InMemorySink.traces.first
+        client_exception_annotation = span[:annotations][2]
         client_exception_annotation_time = client_exception_annotation[:logged_at]
         expect(client_exception_annotation_time).not_to be_nil
       end
@@ -130,9 +129,9 @@ module Telemetry
         client.get_with_exception
       rescue TestException
       end
-      trace = Telemetry::Sinks::InMemorySink.traces.first
+      span = Telemetry::Sinks::InMemorySink.traces.first
 
-      annotations = trace[:spans].first[:annotations]
+      annotations = span[:annotations]
       clientreceived_annotation_time = annotations.last[:logged_at]
       expect(clientreceived_annotation_time).not_to be_nil
     end

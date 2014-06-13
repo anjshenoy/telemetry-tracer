@@ -266,5 +266,13 @@ module Telemetry
       span.stop
       expect(span.in_progress?).to be_false
     end
+
+    it "logs instrumentation_time only if its available" do
+      expect(span.to_hash[:time_to_instrument_trace_bits_only]).to be_nil
+
+      span.instrumentation_time = 12345
+      expect(span.to_hash[:time_to_instrument_trace_bits_only]).to eq(12345)
+    end
+
   end
 end

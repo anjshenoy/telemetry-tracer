@@ -16,6 +16,7 @@ module Telemetry
       @parent_span_id = opts[:parent_span_id]
       @id = generate_id
       @trace_id = opts[:trace_id]
+      @tainted = opts[:tainted]
       @name = opts[:name]
       @annotations = []
       add_annotations(opts[:annotations] || {})
@@ -43,17 +44,30 @@ module Telemetry
       !!@stop_time
     end
 
+    def root?
+      @parent_span_id.nil?
+    end
+
+    def tainted?
+      !@tainted.nil?
+    end
+
     def to_hash
-      {:span_id => id,
-       :trace_id => trace_id,
-       :pid => pid,
-       :hostname => hostname,
-       :parent_span_id => parent_span_id,
-       :name => name,
-       :start_time => start_time,
-       :duration => duration,
-       :annotations => annotations.map(&:to_hash),
-      }
+      hash = {:span_id => id,
+              :trace_id => trace_id,
+              :parent_span_id => parent_span_id,
+              :name => name,
+              :start_time => start_time,
+              :duration => duration,
+              :annotations => annotations.map(&:to_hash)}
+
+      #only root span gets metadata
+      hash.merge!({:tainted => @tainted}) if tainted?
+      root? ? hash.merge(root_span_metadata) : hash
+    end
+
+    def instrumentation_time=(instrumentation_time)
+      @instrumentation_time = instrumentation_time
     end
 
     def in_progress?
@@ -103,5 +117,13 @@ module Telemetry
     def add_annotations(annotations_hash)
       annotations_hash.each {|k, v| annotate(k, v) }
     end
+
+    def root_span_metadata
+      metadata = {:pid => pid, :hostname => hostname}
+
+      instrumentation_hash = @instrumentation_time.nil? ? {} : {:time_to_instrument_trace_bits_only => @instrumentation_time}
+      metadata.merge!(instrumentation_hash)
+    end
+
   end
 end

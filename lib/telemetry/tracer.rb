@@ -1,3 +1,4 @@
+require "json"
 require "telemetry/span"
 require "telemetry/runner"
 require "telemetry/config"
@@ -5,6 +6,11 @@ require "telemetry/helper"
 require "core/forwardable_ext"
 require "telemetry/instrumentation/zephyr"
 require "telemetry/instrumentation/sweatshop/worker"
+
+#TODO:
+# * rename to trace instead of tracer
+# * when trace/span_id are provided, create a new span 
+#   with the same ID as the span id and mark it as the callee
 
 module Telemetry
 
@@ -16,7 +22,6 @@ module Telemetry
 
   class Tracer
     include Helpers::IdMaker
-    include Helpers::Jsonifier
     include Helpers::Timer
     extend SimpleForwardable
 
@@ -35,9 +40,11 @@ module Telemetry
         check_dirty_bits(trace_id, parent_span_id)
         @id = trace_id || generate_id
         @current_span = Span.new({:parent_span_id => parent_span_id, 
-                                  :tracer_id => id,
+                                  :trace_id => id,
                                   :name => opts["name"],
+                                  :tainted => @reason,
                                   :annotations => opts["annotations"]})
+        @root_span = @current_span
         @spans = [@current_span]
       end
     end
@@ -62,15 +69,15 @@ module Telemetry
       end
     end
 
-    def to_hash
-      return {} if !enabled?
+    def spans
+      return [] if !enabled?
 
-      {:id => id,
-       :tainted => @reason,
-       :time_to_instrument_trace_bits_only => @instrumentation_time,
-       :current_span_id => @current_span.id,
-       :spans => @spans.map(&:to_hash)
-      }
+      @root_span.instrumentation_time = @instrumentation_time
+      @spans.map(&:to_hash)
+    end
+
+    def to_json
+      spans.map(&:to_json).join("\n")
     end
 
     def current_span_id
@@ -108,7 +115,7 @@ module Telemetry
 
     def start_new_span(name=nil)
       span = Span.new({:parent_span_id => @current_span.id, 
-                       :tracer => self, 
+                       :trace_id => id, 
                        :name => name})
       span.start
       @spans << span

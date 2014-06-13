@@ -58,11 +58,10 @@ module Sweatshop
       task[:args] << {:tracer => trace_headers}
       TestWorker.do_task(task)
 
-      traces = Telemetry::Sinks::InMemorySink.traces
-      expect(traces.size).to eq(1)
-      trace = traces.first
-      expect(trace[:id]).to eq(trace_headers[Telemetry::TRACE_HEADER_KEY])
-      expect(trace[:spans].first[:parent_span_id]).to eq(trace_headers[Telemetry::SPAN_HEADER_KEY])
+      spans = Telemetry::Sinks::InMemorySink.traces
+      expect(spans.size).to eq(1)
+      expect(spans.first[:trace_id]).to eq(trace_headers[Telemetry::TRACE_HEADER_KEY])
+      expect(spans.first[:parent_span_id]).to eq(trace_headers[Telemetry::SPAN_HEADER_KEY])
     end
 
     it "stays idempotent if the dequeued task does not carry tracer bits" do

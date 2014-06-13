@@ -69,9 +69,10 @@ module Telemetry
       end
 
       def process(trace)
-        @@traces << trace.to_hash
+        @@traces += trace.spans
       end
 
+      #TODO: rename traces to something more pertinent
       def traces
         self.class.traces
       end

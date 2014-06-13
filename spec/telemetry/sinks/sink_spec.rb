@@ -6,11 +6,12 @@ module Telemetry
 
     def initialize(id, span_id)
       @id = id
-      @current_span_id = span_id
+      @root_span_id = span_id
     end
 
-    def to_hash
-      {:id => @id, :current_span_id => @current_span_id}
+    def spans
+      [{ :span_id => @root_span_id, 
+         :trace_id => @id }]
     end
 
   end
@@ -40,15 +41,15 @@ module Telemetry
         sink.process(trace)
 
         expect(Telemetry::Sinks::InMemorySink.traces.size).to eq(1)
-        expect(Telemetry::Sinks::InMemorySink.traces.first).to eq({:id => 123456789, 
-                                                 :current_span_id => 5678})
+        expect(Telemetry::Sinks::InMemorySink.traces.first).to eq({:trace_id => 123456789, 
+                                                                   :span_id => 5678})
 
         trace2 = Telemetry::MockTrace.new(12345678900, 567800)
         sink.process(trace2)
 
         expect(Telemetry::Sinks::InMemorySink.traces.size).to eq(2)
-        expect(Telemetry::Sinks::InMemorySink.traces.last).to eq({:id => 12345678900, 
-                                                :current_span_id => 567800})
+        expect(Telemetry::Sinks::InMemorySink.traces.last).to eq({:trace_id => 12345678900, 
+                                                                  :span_id => 567800})
       end
 
     end

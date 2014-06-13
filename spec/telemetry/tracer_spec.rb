@@ -132,34 +132,34 @@ module Telemetry
 
     it "markes itself as dirty and gives a reason if either trace_id is present but parent span id isn't" do
       tracer = Tracer.with_config(tracer_opts).fetch({Telemetry::TRACE_HEADER_KEY => "fubar123"})
-      expect(tracer.to_hash[:tainted]).to eq("trace_id present; parent_span_id not present.")
+      expect(tracer.spans.first[:tainted]).to eq("trace_id present; parent_span_id not present.")
     end
 
     it "markes itself as dirty if trace id is not present but parent_span_id is" do
       tracer = Tracer.with_config(tracer_opts).fetch({"enabled" => true, Telemetry::SPAN_HEADER_KEY => "fubar123"})
-      expect(tracer.to_hash[:tainted]).to eq("trace_id not present; parent_span_id present. Auto generating trace id")
+      expect(tracer.spans.first[:tainted]).to eq("trace_id not present; parent_span_id present. Auto generating trace id")
     end
 
     it "comes with a brand new span out of the box" do
       tracer = Tracer.with_config(tracer_opts).fetch
-      expect(tracer.to_hash[:spans].size).to eq(1)
+      expect(tracer.spans.size).to eq(1)
     end
 
     it "sets up the current span with a parent span id if one is supplied" do
-      tracer_hash = Tracer.with_config(tracer_opts).fetch({Telemetry::TRACE_HEADER_KEY => 123456789, 
-                                                                    Telemetry::SPAN_HEADER_KEY => 456789}).to_hash
-      expect(tracer_hash[:spans].size).to eq(1)
-      expect(tracer_hash[:spans].first[:parent_span_id]).to eq(456789)
-      expect(tracer_hash[:spans].first[:span_id]).to eq(tracer_hash[:current_span_id])
+      trace_headers = {Telemetry::TRACE_HEADER_KEY => 123456789, 
+                       Telemetry::SPAN_HEADER_KEY => 456789}
+      trace = Tracer.with_config(tracer_opts).fetch(trace_headers)
+      expect(trace.spans.size).to eq(1)
+      expect(trace.spans.first[:parent_span_id]).to eq(456789)
     end
 
     it "passes any annotations to the current span" do
-      tracer = Tracer.with_config(tracer_opts).fetch
-      aggregated_annotations = tracer.to_hash[:spans].map{|span| span[:annotations]}.flatten
+      trace = Tracer.with_config(tracer_opts).fetch
+      aggregated_annotations = trace.spans.map{|span| span[:annotations]}.flatten
       expect(aggregated_annotations).to be_empty
 
-      tracer.annotate("UserAgent", "Firefox")
-      current_span = tracer.to_hash[:spans].first
+      trace.annotate("UserAgent", "Firefox")
+      current_span = trace.spans.first
       span_annotations = current_span[:annotations]
 
       expected_hash = {"UserAgent" => "Firefox"}
@@ -170,10 +170,10 @@ module Telemetry
       Tracer.config = tracer_opts.merge("enabled" => false)
       expect(Tracer.run?).to be_false
 
-      tracer = Tracer.fetch({Telemetry::TRACE_HEADER_KEY => "123", 
-                                      Telemetry::SPAN_HEADER_KEY => "234"})
-      expect(tracer.id).to be_nil
-      expect(tracer.to_hash).to be_empty
+      trace = Tracer.fetch({Telemetry::TRACE_HEADER_KEY => "123", 
+                            Telemetry::SPAN_HEADER_KEY => "234"})
+      expect(trace.id).to be_nil
+      expect(trace.spans).to be_empty
     end
 
     it "is in progress only once its started and before its stopped" do
@@ -190,7 +190,7 @@ module Telemetry
       tracer = Tracer.with_config(tracer_opts).fetch
       expect(tracer.enabled?).to be_true
 
-      aggregated_annotations = tracer.to_hash[:spans].map{|span| span[:annotations]}.flatten
+      aggregated_annotations = tracer.spans.map{|span| span[:annotations]}.flatten
       expect(aggregated_annotations).to be_empty
 
       tracer.apply do |trace|
@@ -202,7 +202,7 @@ module Telemetry
       end
 
       expected_hash = {"foo" => 4}
-      aggregated_annotations = tracer.to_hash[:spans].map{|span| span[:annotations]}.flatten
+      aggregated_annotations = tracer.spans.map{|span| span[:annotations]}.flatten
       expect(aggregated_annotations.size).to eq(1)
       expect(aggregated_annotations.first).to include(expected_hash)
     end
@@ -261,20 +261,20 @@ module Telemetry
     it "applying a trace around a block logs the start time and duration for the current span" do
       tracer = Tracer.with_config(tracer_opts).fetch
       tracer.apply do
-        expect(tracer.to_hash[:spans].first[:start_time]).to be > 0
+        expect(tracer.spans.first[:start_time]).to be > 0
         2*2
       end
-      expect(tracer.to_hash[:spans].first[:duration]).to be > 0
+      expect(tracer.spans.first[:duration]).to be > 0
     end
 
     it "applying a trace around a block yields the trace so annotations can be added to it" do
       tracer = Tracer.with_config(tracer_opts).fetch
       tracer.apply do |trace|
-        aggregated_annotations = tracer.to_hash[:spans].map{|span| span[:annotations]}.flatten
+        aggregated_annotations = tracer.spans.map{|span| span[:annotations]}.flatten
         expect(aggregated_annotations).to be_empty
 
         trace.annotate("foo", "bar")
-        aggregated_annotations = tracer.to_hash[:spans].map{|span| span[:annotations]}.flatten
+        aggregated_annotations = tracer.spans.map{|span| span[:annotations]}.flatten
         expect(aggregated_annotations.size).to eq(1)
       end
     end
@@ -311,7 +311,7 @@ module Telemetry
       annotations = [["UserAgent", "Zephyr"], ["ClientSent", ""]]
       tracer = Tracer.with_config(tracer_opts).fetch
       tracer.apply("foo", annotations) do
-        annotations = tracer.to_hash[:spans].first[:annotations]
+        annotations = tracer.spans.first[:annotations]
         expect(annotations.size).to eq(2)
         expect(annotations.first).to include({"UserAgent" => "Zephyr"})
         expect(annotations.last).to include({"ClientSent" => ""})
@@ -321,10 +321,10 @@ module Telemetry
 
     it "applying a new span makes the current span the parent span" do
       tracer = Tracer.with_config(tracer_opts).fetch
-      previous_span_id = tracer.to_hash[:current_span_id]
+      previous_span_id = tracer.current_span_id
       tracer.apply do |trace|
         trace.apply("fubar2") do |inner_trace|
-          new_span = tracer.to_hash[:spans].last
+          new_span = tracer.spans.last
           expect(new_span[:name]).to eq("fubar2")
           expect(new_span[:id]).not_to eq(previous_span_id)
           expect(new_span[:parent_span_id]).to eq(previous_span_id)
@@ -335,14 +335,14 @@ module Telemetry
     it "starting a new span automatically logs the start time of that span" do
       Tracer.with_config(tracer_opts).fetch.apply do |tracer|
        tracer.apply do |trace|
-         expect(trace.to_hash[:spans].last[:start_time]).to be > 0
+         expect(trace.spans.last[:start_time]).to be > 0
        end
       end
     end
 
     it "assigns a name to the created span if one is given" do
       tracer = Tracer.with_config(tracer_opts).fetch({"name" => "fubar2"})
-      expect(tracer.to_hash[:spans].first[:name]).to eq("fubar2")
+      expect(tracer.spans.first[:name]).to eq("fubar2")
     end
 
     it "evaluates post process blocks in the context of the current span" do
@@ -356,7 +356,7 @@ module Telemetry
       tracer.apply do; end
 
       expected_hash = {"foo" => 2048 }
-      expect(tracer.to_hash[:spans].first[:annotations].first).to include(expected_hash)
+      expect(tracer.spans.first[:annotations].first).to include(expected_hash)
     end
 
     it "executes any post process blocks associated with the current span when its stopped" do
@@ -370,7 +370,7 @@ module Telemetry
         end
       end
 
-      processed_annotations = tracer.to_hash[:spans].first[:annotations]
+      processed_annotations = tracer.spans.first[:annotations]
       expect(processed_annotations.size).to eq(1)
       expect(processed_annotations.first["foo"]).to eq(2048)
     end
@@ -394,27 +394,20 @@ module Telemetry
         expect(tracer.current_span_id).to eq(span1_id)
         tracer.apply do |trace2|
           expect(trace.current_span_id).not_to eq(span1_id)
-          expect(trace2.to_hash[:spans].last[:parent_span_id]).to eq(span1_id)
+          expect(trace2.spans.last[:parent_span_id]).to eq(span1_id)
         end
       end
 
-    end
-
-    it "logs the instrumnentation time only if allowed to run" do
-      Tracer.config = tracer_opts.merge({"enabled" => false})
-      tracer = Tracer.fetch
-      tracer.apply { 2*2 }
-      expect(tracer.to_hash.has_key?(:time_to_instrument_trace_bits_only)).to be_false
     end
 
     it "only stops the currently executing span if applied around a block" do
       tracer = Tracer.with_config(tracer_opts).fetch
       tracer.apply do |trace|
         trace.apply do; end
-        expect(trace.to_hash[:spans].last[:duration]).to be > 0
-        expect(trace.to_hash[:spans].first[:duration]).to eq("NaN")
+        expect(trace.spans.last[:duration]).to be > 0
+        expect(trace.spans.first[:duration]).to eq("NaN")
       end
-      expect(tracer.to_hash[:spans].first[:duration]).to be > 0
+      expect(tracer.spans.first[:duration]).to be > 0
     end
 
     it "bumps the parent span to the current span if the currently nested span is done" do
@@ -472,13 +465,13 @@ module Telemetry
           end
         end
         #child span is done
-        aggregated_annotations = tracer.to_hash[:spans].map{|span| span[:annotations]}.flatten
+        aggregated_annotations = tracer.spans.map{|span| span[:annotations]}.flatten
         expect(aggregated_annotations).to be_empty
       end
 
       #parent_span is done => all spans are done. 
       #now trace get flushed and all post_process_blocks should get executed
-      aggregated_annotations = tracer.to_hash[:spans].map{|span| span[:annotations]}.flatten
+      aggregated_annotations = tracer.spans.map{|span| span[:annotations]}.flatten
       expect(aggregated_annotations.size).to eq(2)
     end
 
@@ -486,7 +479,7 @@ module Telemetry
       tracer = Tracer.with_config(tracer_opts).fetch
 
       tracer.apply { 2*2 }
-      expect(tracer.to_hash[:time_to_instrument_trace_bits_only]).to be > 0
+      expect(tracer.spans.first[:time_to_instrument_trace_bits_only]).to be > 0
     end
 
     it "is no longer in progress once all spans have stopped executing" do
@@ -509,7 +502,7 @@ module Telemetry
     it "takes an optional span_name when applied around a block" do
       tracer = Tracer.with_config(tracer_opts).fetch
       tracer.apply("foo") do |trace|
-        expect(trace.to_hash[:spans].first[:name]).to eq("foo")
+        expect(trace.spans.first[:name]).to eq("foo")
       end
     end
 
@@ -521,9 +514,7 @@ module Telemetry
                 end }.to raise_error("Hello")
 
       #trace still gets flushed
-      traces = Telemetry::Sinks::InMemorySink.traces
-      expect(traces.size).to eq(1)
-      spans = traces.first[:spans]
+      spans = Telemetry::Sinks::InMemorySink.traces
 
       expect(spans.size).to eq(1)
       expect(spans.first[:name]).to eq("foo")
@@ -535,13 +526,13 @@ module Telemetry
       tracer = Tracer.with_override(false).fetch
       expect(tracer.enabled?).to be_false
       tracer.annotate("key", "value")
-      expect(tracer.to_hash).to be_empty
+      expect(tracer.spans).to be_empty
 
       tracer = Tracer.with_override(true).fetch
       expect(tracer.enabled?).to be_true
       tracer.annotate("key", "value")
 
-      aggregated_annotations = tracer.to_hash[:spans].map{|span| span[:annotations]}.flatten
+      aggregated_annotations = tracer.spans.map{|span| span[:annotations]}.flatten
       expect(aggregated_annotations.size).to eq(1)
 
       expected_hash = {"key" => "value"}
@@ -556,7 +547,7 @@ module Telemetry
       tracer.post_process("key") do
         2*2
       end
-      expect(tracer.to_hash).to be_empty
+      expect(tracer.spans).to be_empty
 
 
       tracer = Tracer.with_override(true).fetch
@@ -566,7 +557,7 @@ module Telemetry
           2*2
         end
       end
-      annotations = tracer.to_hash[:spans].first[:annotations]
+      annotations = tracer.spans.first[:annotations]
       expect(annotations.size).to eq(1)
 
       expected_hash = {"key" => 4}

@@ -6,7 +6,6 @@ module Telemetry
 
   class Annotation
     include Helpers::TimeMaker
-    include Helpers::Jsonifier
 
     attr_reader :params, :log_time, :time_to_process
 
