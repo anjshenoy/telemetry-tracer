@@ -32,7 +32,7 @@ module Telemetry
 
       it "creates an in memory sink if an option is provided" do
         sink = Sink.new(nil, nil, error_logger, true)
-        expect(sink.traces).to eq([])
+        expect(sink.traces_with_spans).to eq([])
       end
 
       it "aggregates trace outputs in memory" do
@@ -40,15 +40,15 @@ module Telemetry
         sink = Sink.new(nil, nil, error_logger, true)
         sink.process(trace)
 
-        expect(Telemetry::Sinks::InMemorySink.traces.size).to eq(1)
-        expect(Telemetry::Sinks::InMemorySink.traces.first).to eq({:trace_id => 123456789, 
+        expect(Telemetry::Sinks::InMemorySink.traces_with_spans.size).to eq(1)
+        expect(Telemetry::Sinks::InMemorySink.traces_with_spans.first).to eq({:trace_id => 123456789, 
                                                                    :span_id => 5678})
 
         trace2 = Telemetry::MockTrace.new(12345678900, 567800)
         sink.process(trace2)
 
-        expect(Telemetry::Sinks::InMemorySink.traces.size).to eq(2)
-        expect(Telemetry::Sinks::InMemorySink.traces.last).to eq({:trace_id => 12345678900, 
+        expect(Telemetry::Sinks::InMemorySink.traces_with_spans.size).to eq(2)
+        expect(Telemetry::Sinks::InMemorySink.traces_with_spans.last).to eq({:trace_id => 12345678900, 
                                                                   :span_id => 567800})
       end
 

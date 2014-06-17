@@ -58,7 +58,7 @@ module Sweatshop
       task[:args] << {:tracer => trace_headers}
       TestWorker.do_task(task)
 
-      spans = Telemetry::Sinks::InMemorySink.traces
+      spans = Telemetry::Sinks::InMemorySink.traces_with_spans
       expect(spans.size).to eq(1)
       expect(spans.first[:trace_id]).to eq(trace_headers[Telemetry::TRACE_HEADER_KEY])
       expect(spans.first[:parent_span_id]).to eq(trace_headers[Telemetry::SPAN_HEADER_KEY])

@@ -514,7 +514,7 @@ module Telemetry
                 end }.to raise_error("Hello")
 
       #trace still gets flushed
-      spans = Telemetry::Sinks::InMemorySink.traces
+      spans = Telemetry::Sinks::InMemorySink.traces_with_spans
 
       expect(spans.size).to eq(1)
       expect(spans.first[:name]).to eq("foo")

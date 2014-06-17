@@ -65,24 +65,23 @@ module Telemetry
 
     class InMemorySink
       def initialize
-        @@traces ||= []
+        @@traces_with_spans ||= []
       end
 
       def process(trace)
-        @@traces += trace.spans
+        @@traces_with_spans += trace.spans
       end
 
-      #TODO: rename traces to something more pertinent
-      def traces
-        self.class.traces
+      def traces_with_spans
+        self.class.traces_with_spans
       end
 
-      def self.traces
-        @@traces
+      def self.traces_with_spans
+        @@traces_with_spans
       end
 
       def self.flush!
-        @@traces = []
+        @@traces_with_spans = []
       end
     end
   end

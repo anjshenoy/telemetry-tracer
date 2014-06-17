@@ -45,7 +45,7 @@ module Telemetry
       opts.delete("logger")
       config = Config.new(opts.merge!({"in_memory" => true}))
 
-      expect(config.sink.traces).to eq([])
+      expect(config.sink.traces_with_spans).to eq([])
     end
 
     it "switches itself off if it cant create the error log file" do
