@@ -228,6 +228,11 @@ module Telemetry
       def reset
         @tracer = nil
       end
+
+      def exists?
+        @tracer && @tracer.enabled?
+      end
     end
+
   end
 end

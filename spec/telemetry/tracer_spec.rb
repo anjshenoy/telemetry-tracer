@@ -585,5 +585,20 @@ module Telemetry
       expect(Telemetry::Tracer.current_trace_headers).to eq(tracer.headers)
     end
 
+    it "can tell me if a live trace currently exists without prefetching a trace" do
+      expect(Tracer.exists?).to be_false
+    end
+
+    it "can tell me if a live trace currently exists" do
+      tracer = Tracer.with_config(tracer_opts).fetch
+      expect(tracer.enabled?).to be_true
+      expect(Tracer.exists?).to be_true
+    end
+
+    it "can tell me if a live trace does not currently exists" do
+      tracer = Tracer.with_config(tracer_opts.merge({"enabled" => false})).fetch
+      expect(tracer.enabled?).to be_false
+      expect(Tracer.exists?).to be_false
+    end
   end
 end
