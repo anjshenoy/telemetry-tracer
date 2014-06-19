@@ -4,7 +4,7 @@ module Sweatshop
   class Worker
     class << self
       def enqueue_with_trace(task, *args)
-        if Telemetry::Tracer.run?
+        if Telemetry::Tracer.exists?
           task[:args] << {:tracer => Telemetry::Tracer.current_trace_headers}
         end
         enqueue_without_trace(task, *args)
