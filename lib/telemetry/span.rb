@@ -107,7 +107,7 @@ module Telemetry
         instrumentation_time = hash.delete(:instrumentation_time)
         exception = hash.delete(:exception)
         if exception
-          Telemetry::Config.error_logger.error("Error processing annotation for trace_id: #{@trace_id}, span_id: #{self.id}" + exception)
+          Telemetry::Config.error_logger.error("Error processing annotation for trace_id: #{@trace_id}, span_id: #{self.id} " + exception)
         end
         Annotation.new(hash, instrumentation_time)
       end
