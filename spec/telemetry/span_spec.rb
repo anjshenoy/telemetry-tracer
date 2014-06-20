@@ -53,14 +53,6 @@ module Telemetry
       expect(span.start_time).to be <= time_in_nanos
     end
 
-    it "stores the process id its executing on" do
-      expect(span.pid).to be(Process.pid)
-    end
-
-    it "stores the fully qualified hostname its executing on" do
-      expect(span.hostname).to eql(Socket.gethostname)
-    end
-
     it "logs the start time when started" do
       span.start
       expect(span.start_time).not_to be_nil
@@ -272,6 +264,22 @@ module Telemetry
 
       span.instrumentation_time = 12345
       expect(span.to_hash[:time_to_instrument_trace_bits_only]).to eq(12345)
+    end
+
+    it "adds the pid, hostname only to the root span" do
+      tracer.apply do |trace1|
+        tracer.apply do |trace2|
+          #noop
+        end
+      end
+      spans = tracer.spans
+      root_span = spans.first
+      child_span = spans.last
+
+      expect(root_span.to_hash[:pid]).not_to be_nil
+      expect(root_span.to_hash[:hostname]).not_to be_nil
+      expect(child_span.to_hash[:pid]).to be_nil
+      expect(child_span.to_hash[:hostname]).to be_nil
     end
 
   end

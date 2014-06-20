@@ -1,5 +1,6 @@
 require "socket"
 require "telemetry/sampler"
+require "telemetry/helpers/metadata"
 
 module Telemetry
   class Runner
@@ -63,7 +64,11 @@ module Telemetry
     end
 
     def matching_host?
-      enabled? && (@host.nil? ? true : !!(Socket.gethostname =~ /#{@host}/))
+      enabled? && (@host.nil? ? true : !!(hostname =~ /#{@host}/))
+    end
+
+    def hostname
+      Telemetry::Helpers::Metadata.hostname
     end
 
     def sample?

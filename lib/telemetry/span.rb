@@ -1,6 +1,7 @@
 require "telemetry/helper"
 require "telemetry/annotation"
 require "telemetry/processor"
+require "telemetry/helpers/metadata"
 
 module Telemetry
   SpanStoppedException = Class.new(Exception)
@@ -10,7 +11,7 @@ module Telemetry
     include Helpers::TimeMaker
 
     attr_reader :id, :parent_span_id, :trace_id, :name, :annotations, 
-      :start_time, :duration, :pid, :hostname, :processors
+      :start_time, :duration, :processors
 
     def initialize(opts={})
       @parent_span_id = opts[:parent_span_id]
@@ -20,8 +21,6 @@ module Telemetry
       @name = opts[:name]
       @annotations = []
       add_annotations(opts[:annotations] || {})
-      @pid = Process.pid
-      @hostname = Socket.gethostname
       @processors = []
     end
 
@@ -119,10 +118,8 @@ module Telemetry
     end
 
     def root_span_metadata
-      metadata = {:pid => pid, :hostname => hostname}
-
       instrumentation_hash = @instrumentation_time.nil? ? {} : {:time_to_instrument_trace_bits_only => @instrumentation_time}
-      metadata.merge!(instrumentation_hash)
+      Telemetry::Helpers::Metadata.to_hash.merge(instrumentation_hash)
     end
 
   end
