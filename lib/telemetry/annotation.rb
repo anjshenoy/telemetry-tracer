@@ -19,7 +19,9 @@ module Telemetry
     end
 
     def to_hash
-      hash = params.merge({:logged_at => log_time})
+      array = params.to_a.first
+      hash = {:name => array[0], :message => array[1]}
+      hash = hash.merge({:logged_at => log_time})
       if !time_to_process.nil?
         hash.merge!({:time_to_run_post_process_block => time_to_process})
       end

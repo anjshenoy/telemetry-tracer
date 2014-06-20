@@ -14,7 +14,8 @@ module Telemetry
     end
 
     it "comes with a to_hash method which lists its internals" do
-      expect(a.to_hash["foo"]).to eq("bar")
+      expect(a.to_hash[:name]).to eq("foo")
+      expect(a.to_hash[:message]).to eq("bar")
       expect(a.to_hash[:logged_at]).not_to be_nil
     end
 

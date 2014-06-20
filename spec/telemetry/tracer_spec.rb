@@ -162,7 +162,7 @@ module Telemetry
       current_span = trace.spans.first
       span_annotations = current_span[:annotations]
 
-      expected_hash = {"UserAgent" => "Firefox"}
+      expected_hash = {:name => "UserAgent", :message => "Firefox"}
       expect(span_annotations.first).to include(expected_hash)
     end
 
@@ -201,7 +201,7 @@ module Telemetry
         expect(tracer.enabled?).to be_true
       end
 
-      expected_hash = {"foo" => 4}
+      expected_hash = {:name => "foo", :message => 4}
       aggregated_annotations = tracer.spans.map{|span| span[:annotations]}.flatten
       expect(aggregated_annotations.size).to eq(1)
       expect(aggregated_annotations.first).to include(expected_hash)
@@ -313,8 +313,8 @@ module Telemetry
       tracer.apply("foo", annotations) do
         annotations = tracer.spans.first[:annotations]
         expect(annotations.size).to eq(2)
-        expect(annotations.first).to include({"UserAgent" => "Zephyr"})
-        expect(annotations.last).to include({"ClientSent" => ""})
+        expect(annotations.first).to include({:name => "UserAgent", :message => "Zephyr"})
+        expect(annotations.last).to include({:name => "ClientSent", :message => ""})
       end
 
     end
@@ -355,7 +355,7 @@ module Telemetry
       end
       tracer.apply do; end
 
-      expected_hash = {"foo" => 2048 }
+      expected_hash = {:name => "foo", :message => 2048 }
       expect(tracer.spans.first[:annotations].first).to include(expected_hash)
     end
 
@@ -372,7 +372,8 @@ module Telemetry
 
       processed_annotations = tracer.spans.first[:annotations]
       expect(processed_annotations.size).to eq(1)
-      expect(processed_annotations.first["foo"]).to eq(2048)
+      expect(processed_annotations.first[:name]).to eq("foo")
+      expect(processed_annotations.first[:message]).to eq(2048)
     end
 
     it "cannot reapply a stale trace" do
@@ -535,7 +536,7 @@ module Telemetry
       aggregated_annotations = tracer.spans.map{|span| span[:annotations]}.flatten
       expect(aggregated_annotations.size).to eq(1)
 
-      expected_hash = {"key" => "value"}
+      expected_hash = {:name => "key", :message => "value"}
       expect(aggregated_annotations.first).to include(expected_hash)
     end
 
@@ -560,7 +561,7 @@ module Telemetry
       annotations = tracer.spans.first[:annotations]
       expect(annotations.size).to eq(1)
 
-      expected_hash = {"key" => 4}
+      expected_hash = {:name => "key", :message => 4}
       expect(annotations.first).to include(expected_hash)
     end
 
