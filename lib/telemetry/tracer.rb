@@ -11,6 +11,7 @@ module Telemetry
 
   TRACE_HEADER_KEY = "X-Telemetry-TraceId"
   SPAN_HEADER_KEY = "X-Telemetry-SpanId"
+  DISABLE_UNLESS_TRACE_HEADERS = "disable_unless_trace_headers"
 
   class TraceProcessedException < Exception; end
   class ConfigNotApplied < Exception; end
@@ -26,6 +27,9 @@ module Telemetry
       @in_progress = false
       @flushed = false
       @enabled = (opts["run_basic_mode"] == true) ? self.class.run_basic? : self.class.run?
+      if enabled? && (opts[DISABLE_UNLESS_TRACE_HEADERS] == true) && !trace_headers_present?(opts)
+        @enabled =  false
+      end
       return if !enabled?
 
       instrument do
@@ -165,6 +169,10 @@ module Telemetry
         @reason = "trace_id present; parent_span_id not present."
       end
       @dirty
+    end
+
+    def trace_headers_present?(opts={})
+      opts.has_key?(Telemetry::TRACE_HEADER_KEY) || opts.has_key?(Telemetry::SPAN_HEADER_KEY)
     end
 
     class << self

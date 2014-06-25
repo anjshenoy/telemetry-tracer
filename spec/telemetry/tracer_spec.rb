@@ -112,6 +112,37 @@ module Telemetry
       expect(tracer.enabled?).to be_false
     end
 
+    it "has the option to disable itself if the option of disable_unless_trace_headers is true and no trace headers are provided" do
+      Tracer.config = tracer_opts
+      expect(Tracer.run_basic?).to be_true
+
+      tracer = Tracer.fetch_with_run_basic_mode({Telemetry::DISABLE_UNLESS_TRACE_HEADERS => true})
+      expect(tracer.enabled?).to be_false
+
+    end
+
+    it "will run if the disable_unless_trace_headers flag is set and the trace_id is provided in the trace header" do
+      Tracer.config = tracer_opts
+      tracer = Tracer.fetch_with_run_basic_mode({Telemetry::DISABLE_UNLESS_TRACE_HEADERS => true, 
+                                                 Telemetry::TRACE_HEADER_KEY => "1231231232131232"})
+      expect(tracer.enabled?).to be_true
+    end
+
+    it "will run if the disable_unless_trace_headers flag is set and the span_id is provided in the trace header" do
+      Tracer.config = tracer_opts
+      tracer = Tracer.fetch_with_run_basic_mode({Telemetry::DISABLE_UNLESS_TRACE_HEADERS => true, 
+                                                 Telemetry::SPAN_HEADER_KEY => "123123123"})
+      expect(tracer.enabled?).to be_true
+    end
+
+    it "will run if the disable_unless_trace_headers flag is set and both the trace_id and span_id are provided in the trace headers" do
+      Tracer.config = tracer_opts
+      tracer = Tracer.fetch_with_run_basic_mode({Telemetry::DISABLE_UNLESS_TRACE_HEADERS => true, 
+                                                 Telemetry::TRACE_HEADER_KEY => "1231231232131232",
+                                                 Telemetry::SPAN_HEADER_KEY => "123123123"})
+      expect(tracer.enabled?).to be_true
+    end
+
     it "creates a trace if one does not already exist" do
       tracer1 = Tracer.fetch
       tracer2 = Tracer.fetch
@@ -601,5 +632,6 @@ module Telemetry
       expect(tracer.enabled?).to be_false
       expect(Tracer.exists?).to be_false
     end
+
   end
 end
