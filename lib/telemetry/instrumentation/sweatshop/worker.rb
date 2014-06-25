@@ -13,7 +13,7 @@ module Sweatshop
       alias_method :enqueue, :enqueue_with_trace
 
       def do_task_with_trace(task)
-        t_headers = trace_headers(task[:args])
+        t_headers = trace_headers(task[:args]).merge({Telemetry::DISABLE_UNLESS_TRACE_HEADERS => true})
         Telemetry::Tracer.fetch_with_run_basic_mode(t_headers).apply(queue_name) do |trace|
           do_task_without_trace(task)
         end

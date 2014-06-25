@@ -65,9 +65,29 @@ module Sweatshop
     end
 
     it "stays idempotent if the dequeued task does not carry tracer bits" do
+      Telemetry::Tracer.config = tracer_opts
+      expect(Telemetry::Tracer.run?).to be_true
+
       task[:args] << {:tracer => {}}
       result = TestWorker.do_task(task)
       expect(result).to eq([{:foo => 1, :bar => "abc"}])
+    end
+
+    it "a trace is not initiated if there are no tracer bits in the header" do
+      task[:args] << {:tracer => {}}
+      TestWorker.do_task(task)
+
+      expect(Telemetry::Tracer.fetch.enabled?).to be_false
+    end
+
+    it "runs a trce if there are tracer bits in the trace headers" do
+      Telemetry::Tracer.config = tracer_opts
+      expect(Telemetry::Tracer.run?).to be_true
+
+      task[:args] << {:tracer => {Telemetry::TRACE_HEADER_KEY => 1231231}}
+      TestWorker.do_task(task)
+
+      expect(Telemetry::Tracer.fetch.enabled?).to be_true
     end
 
     it "strips the tracer bits coming off the queue only if they are enqueued" do
