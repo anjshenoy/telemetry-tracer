@@ -91,10 +91,19 @@ module Sweatshop
     end
 
     it "strips the tracer bits coming off the queue only if they are enqueued" do
+      Telemetry::Tracer.config = tracer_opts
       expect(task[:args].size).to be(1)
 
       result = TestWorker.do_task(task)
       expect(result).to eq([{:foo => 1, :bar => "abc"}])
+    end
+
+    it "strips the tracer bits only if the task that's popped off the queue has an args key " do
+      Telemetry::Tracer.config = tracer_opts
+      task[:args] = nil
+
+      result = TestWorker.do_task(task)
+      expect(result).to eq(nil)
     end
 
     it "strips the tracer bits coming off the queue only if they are enqueued and in trace format" do

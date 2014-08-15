@@ -34,6 +34,8 @@ module Sweatshop
       # does not have to know the tracer is even running and can see
       # the message as it was in its original format.
       def trace_headers(args)
+        return {} if args.nil?
+
         last_item = args[-1]
         if args.size > 1 && last_item.is_a?(Hash) && last_item.has_key?(:tracer)
           return args.delete_at(-1)[:tracer]
