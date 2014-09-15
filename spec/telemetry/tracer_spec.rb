@@ -633,5 +633,15 @@ module Telemetry
       expect(Tracer.exists?).to be_false
     end
 
+    context 'disabled tracer' do
+      it "clears the @tracer variable when exiting the last apply block" do
+        disabled_opts = tracer_opts.merge('enabled' => false)
+        tracer = Tracer.with_config(disabled_opts).fetch
+        tracer.apply do
+          expect(Tracer.fetch).to be(tracer)
+        end
+        expect(Tracer.fetch).not_to be(tracer)
+      end
+    end
   end
 end

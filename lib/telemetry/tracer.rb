@@ -136,13 +136,17 @@ module Telemetry
     end
 
     def stop
-      return if !enabled?
-      raise TraceProcessedException.new(trace_processed_error_string) if flushed?
-      instrument do
-        @current_span.stop
-        bump_current_span
+      if enabled?
+        raise TraceProcessedException.new(trace_processed_error_string) if flushed?
+        instrument do
+          @current_span.stop
+          bump_current_span
+        end
+        flush! if @spans.all?(&:stopped?)
+      else
+        # Reset the Tracer class @tracer variable even if the trace was disabled
+        self.class.reset
       end
-      flush! if @spans.all?(&:stopped?)
     end
 
     def flushed?
