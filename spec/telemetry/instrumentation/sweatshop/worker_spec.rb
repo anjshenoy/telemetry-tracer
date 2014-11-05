@@ -9,7 +9,7 @@ module Sweatshop
     end
 
     def self.do_task_without_trace(task)
-      task[:args]
+      task[:args] if task.is_a?(Hash)
     end
   end
 
@@ -96,6 +96,14 @@ module Sweatshop
 
       result = TestWorker.do_task(task)
       expect(result).to eq([{:foo => 1, :bar => "abc"}])
+    end
+
+    it "strips the tracer bits only if the task that's popped off the queue is a hash" do
+      Telemetry::Tracer.config = tracer_opts
+      task = [12345, "some object"]
+
+      result = TestWorker.do_task(task)
+      expect(result).to eq(nil)
     end
 
     it "strips the tracer bits only if the task that's popped off the queue has an args key " do

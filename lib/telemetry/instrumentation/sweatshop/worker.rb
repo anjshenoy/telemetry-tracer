@@ -13,7 +13,7 @@ module Sweatshop
       alias_method :enqueue, :enqueue_with_trace
 
       def do_task_with_trace(task)
-        t_headers = trace_headers(task[:args]).merge({Telemetry::DISABLE_UNLESS_TRACE_HEADERS => true})
+        t_headers = trace_headers(task).merge({Telemetry::DISABLE_UNLESS_TRACE_HEADERS => true})
         Telemetry::Tracer.fetch_with_run_basic_mode(t_headers).apply(queue_name) do |trace|
           do_task_without_trace(task)
         end
@@ -33,7 +33,8 @@ module Sweatshop
       # parse the trace headers out so that the underlying application
       # does not have to know the tracer is even running and can see
       # the message as it was in its original format.
-      def trace_headers(args)
+      def trace_headers(task)
+        args = task[:args] if task.is_a?(Hash) && task.has_key?(:args)
         return {} if args.nil?
 
         last_item = args[-1]
